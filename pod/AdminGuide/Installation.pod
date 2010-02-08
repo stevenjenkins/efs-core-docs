@@ -1,0 +1,24 @@
+
+=head1 EFS Installation Guide
+
+This document is an overview of the EFS installation and configuration
+process, and will guide you through the steps necessary to getting a
+new, fully functional EFS domain up and running in your Enterprise.
+
+First, we strongly recommend reading the Planning documentation, since
+many aspects of an EFS domain are difficult to change once it has been
+deployed.  In particular, the region, campus, location and cell names
+will be relatively static.
+
+=head1 Overview
+
+=head2 Bootstrapping the Initial EFS Server
+
+The first thing to do is install the EFS software into the first EFS
+server host, initialize the database, and define the first EFS dev
+cell.  This process is automated using several scripts in the EFS
+source distribution, and the entire process is documented in:
+
+=head2 Bootstrapping the Client Platforms
+
+=cut

@@ -1,0 +1,668 @@
+
+=head1 Platform Support in EFS
+
+EFS is designed to support an arbitrary number of heterogeneous client
+platforms, but each and every platform must be supported by the
+efs_platform script, and rc.efs, as well as defined properly in the
+EFS database.
+
+Before you begin bootstrapping your EFS environment, it is critical to
+decide which platforms will be supported in the initial deployment.
+It is much easier to do the extra work up front to build out the
+infrastructure for several platforms at once, prior to allowing real
+users to access the system, than it is post deployment.
+
+While you can add platforms at a later date, it is far more effort, so
+if you know you want support for a given platform, try to build
+support for it during the bootstrap process.
+
+=head1 Platforms and Instance Concepts
+
+The first thing we have to do is clearly define the EFS specific usage
+of the terms Platform and PlatformInstance (often refered to as just
+"instances", if you're into the whole brevity thing).
+
+=head2 Platforms
+
+A platform is defined by a chipset, an operating system, and an
+operating system version.  One typically builds a given software
+product once for a platform, and those binaries are shared across a
+set of compatible platform instances.  While it is certainly possible
+(and in some cases, desirable) to compile software optimized for
+specific chipsets, or specific minor releases of operating systems, in
+practice this is rarely required, and in the experience of the EFS
+team, rarely worth the effort for the majoriry of the software managed
+in a large enterprise.
+
+The format of a platform definition is as follows:
+
+    <cpu>.<os>.<osrel>
+
+For example, EFS's default platform specifications use the following
+values:
+
+=head3 CPU Definitions
+
+    x86-32      32 bit x86-compatible chips
+    x86-64      64 bit x86-compatible chips
+    sparc32     32 bit Sparc chips
+    sparc64     64 bit Sparc chips
+
+=head3 Operating System Definitions
+
+    sunos       Sun's Solaris OS
+    rhel        Red Hat Enterprise Linux
+    ubuntu      Ubuntu Linux
+
+=head3 Operating System Releases
+
+For sunos: 5.10, 5.11, etc.
+
+For ubuntu: 9.4, 9.10, 10.4, etc., based on the 6 month release
+schedules of the Ubuntu community.
+
+For rhel: 5, 6, etc.
+
+=head2 Platform Instances
+
+A platform is always defined with one or more specific instance
+definitions, which identify the specific machine types with finer
+granularity.  Instance definitions have the same format as platforms,
+but the difference is that the cpu, os, and osrel can be broken down
+and specified with finer granularity.
+
+There are two different ways that platform instances are used, one
+critical to the implemenation of the EFS client, and one optional
+usage we expect to be leveraged sparingly.
+
+=head3 Instance Specific NFS Mounts and the "exec" magic
+
+B<NOTE: This section is long, and probably belongs in an appendix, later
+in the document.>
+
+EFS supports a very powerful mechanism (inspired and loosely based on
+the client side AFS @sys mechanism) for specifying the pathname to a
+binary in a platform independent way.  The following path:
+
+    /efs/dist/foo/bar/1.0/exec/bin/foo
+
+Will resolve to different binary, depending on the platform
+B<instance> of the EFS client on which the path is resolved.  This
+works through the indirection of two symlinks.  For starters, all of
+the platform specific content for a given release is visible to
+clients of all platforms, if they want to access it by name.  For
+example, suppose we build foo/bar/1.0 for both x86-32.rhel.5 and
+sparc32.sunos.10.  The directory tree in /efs/dist will have the
+following pair of directories.
+
+    /efs/dist/foo/bar/1.0/.exec/x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.10
+
+If you have defined the default EFS platforms and instances, then EFS
+will also create a set of symlinks in the .exec directory as follows.
+
+For each of the backwards compatible platforms:
+
+    /efs/dist/foo/bar/1.0/.exec/x86-32.rhel.6 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.11 -> sparc32.sunos.10
+
+For each of the emulating platforms (used when a 64bit platform can
+emulate the instruction set of it's 32 bit version):
+
+    /efs/dist/foo/bar/1.0/.exec/x86-64.rhel.5 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/x86-64.rhel.6 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/sparc64.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sparc64.sunos.11 -> sparc32.sunos.10
+
+Note that EFS removes all unnecessary intermediate symlinks, and every
+symlink will usually point directly to a real directory.  Since most
+UNIX kernels have a hardcoded limit (usually only 20) for the number
+of symlinks that can be chained together, this is important.  If these
+links were chained together, EFS can waste half of that limit easily,
+once your platform and instance namespace has grown over time.
+
+That completes all of the symlinks created from the platform
+namespace.  In addition, EFS will create symlinks for each instance to
+it's underlying platform.  This will include all of the following:
+
+    /efs/dist/foo/bar/1.0/.exec/amd32.rhel.5 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/amd64.rhel.5 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/amd32.rhel.6 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/amd64.rhel.6 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/ia32.rhel.5 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/ia64.rhel.5 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/ia32.rhel.6 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/ia64.rhel.6 -> x86-32.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.10 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.11 -> sparc32.sunos.10
+
+This is great, if you are accessing this software using a platform of
+instance specific path.  However, there is a platform independent way
+to access the subdirectories of .exec, through a pair of symlinks.
+
+The first one is visible to ALL clients, regardless of platform:
+
+    /efs/dist/foo/bar/1.0/exec -> /.efs/dist/foo/bar/1.0/exec
+
+The second one varies, because while all clients share the same NFS
+mount for /efs/dist, the /.efs/dist mount is instance specific.  For
+example, the mounts typically look something like:
+
+    servername.example.com:/vol/efs_dist/efs_qtree/amd64.rhel.5/dist
+                         2101870592 523342464 1578528128  25% /.efs/dist
+    servername.example.com:/vol/efs_dist/efs_qtree/dist
+                         2101870592 523342464 1578528128  25% /efs/dist
+
+Note that /.efs/dist is a mount point for a instance specific
+subdirectory of the /efs/dist volume.  On this particular client, that
+second symlink is:
+
+    /.efs/dist/foo/bar/1.0/exec -> /efs/dist/foo/bar/1.0/.exec/amd64.rhel.5
+
+Since /.efs/dist is instance specific, this second symlink is always
+instance specific, and this indirection accomplishes for NFS (v3 and
+v4) what the AFS client does as follows:
+
+    /efs/dist/foo/bar/1.0/exec -> .exec/@sys
+
+This is significant in one very important respect: it would not be
+terribly difficult to enhance EFS to support AFS as a backend
+filesystem.
+
+To "see" how all of these links provide, EFS provides a utility "symlink":
+
+    user@hostname$ symlink /efs/dist/foo/bar/1.0/exec/bin/bar
+    /efs/dist/foo/bar/1.0/exec/bin/bar:
+    /efs/dist/foo/bar/1.0/exec -> /.efs/dist/foo/bar/1.0/exec
+    /.efs/dist/foo/bar/1.0/exec -> /efs/dist/foo/bar/1.0/.exec/amd64.rhel.5
+    /efs/dist/foo/bar/1.0/.exec/amd64.rhel.5 -> x86-32.rhel.5
+                                x86-32.rhel.5/bin/bar
+
+=head3 Instance specific installs
+
+The generally recommended way to provide software to a set of platform
+instances is to install the software once, into a platform specific
+install, shared by all of it's instances.  However, there are rare
+edge conditions which require building instance-specific binaries, and
+in those cases, EFS allows installs to be created using either a
+platform or a platform instance name.
+
+In the experience of the EFS team, which has integrated a very long
+list of commercial vendor products and open source software with EFS,
+instance specific installs have not been necessary.  The primary use
+for instance specific installs is for managing components of the
+operating system itself in EFS, which can be a powerful tool for
+managing dataless, or stateless, clients.
+
+While the os and osrel components of the instance names could be
+specified with finer granularity than the values used in the
+platforms, we have not found this necessary, and thus, the default
+values defined by EFS merely breakdown the cpu into sub categories.
+
+The default platform instance specifications use the following values:
+
+=head3 CPU Specification
+
+For the x86-* platforms, the CPU is broken down into:
+
+    ia32        32 bit Intel X86 chips
+    ia64        64 bit Intel X86 chips
+    amd32       32 bit AMD X86 chips
+    amd64       64 bit AMD X86 chips
+
+For the sparc platforms, the CPU is broken down into Sun's chipset
+identifiers:
+
+    sun4u32
+    sun4v32
+    sun4u64
+    sun4v64
+
+The os and osrel values used are the same as those used in the
+platforms.
+
+=head2 Platform Aliases
+
+Platform aliases are implemented as nothing more than symlinks to
+another platform.  They were implemented primarily for the purpose of
+providing backwards compatibility between the EFS 3 platform
+namespace, and the legacy EFS 2 names, which were not as well thought
+out.  Aliases allow an enterprise to migrate from one naming
+convention to another, over time.
+
+Aliases can also be used to group compatible platform together, as
+described above for the Ubuntu releases.  At anytime, a platform alias
+can be redefined as a real platform, and the previously aliased
+platform supported independently.
+
+The logistics of changing the platform namespace, and updating the
+symlink tree in the .exec directories, globally (yes, globally) is
+documented below in detail.
+
+=head2 Platform Instance Aliases
+
+Similar to a platform alias, a platform instance alias is implemented
+as a symlink to the underlying platform instance.  These were also
+implemented to make it possible to migrate from one namespace to
+another, and to group a series of compatible OS releases together.  If
+a set of platforms are grouped using aliases, then the instances
+should obviously be grouped in the same manner.
+
+Both types of alias are created automatically when renaming an
+existing platform or platform alias (for essential backwards
+compatibility with existing installs and clients).
+
+=head1 Platform Management
+
+Generally speaking, you will not have to manage the platform namespace
+very often.  If enough thought is put into the initial definitions,
+then the only time you will normally need to manage the namespace is
+when adding an entirely new set of platforms (which is trivial,
+because it has no relationship to the existing ones), extending an
+existing namespace (by adding new definitions for new OS releases and
+possibly new hardware types).  Both of these tasks are relatively
+straight forward.
+
+With the introduction of aliases, it is now possible to completely
+redefine an existing hierarchy, but one should hope this is never
+required.  This was implemented primarily to allow us to change the
+existing legacy EFS 2 environments to the new EFS 3 namespace.
+
+NOTE: All changes to the platform namespace should be made while EFS
+is in maintenance mode.  It is important that noone attempt to create
+and install or dist a release while the namespace is in flux.
+
+=head2 Defining the Initial Platform Namespace
+
+When a new EFS domain is bootstrapped, the standard default set of EFS
+platforms and instances for the supported UNIX-like platforms are all
+defined for you.  This default list will be extended as the EFS
+community grows, and the product is ported to more platforms.
+Defining the initial platform and instance namespace can be done by
+altering these configuration files in the source tree:
+
+    .../source/sql/platform.conf
+    .../source/sql/platformalias.conf
+    .../source/sql/instance.conf
+    .../source/sql/instancealias.conf
+
+Anyone wishing to extend this namespace to an new, as yet unsupported
+platform is most strongly encouraged to work closely with the EFS
+development team, so ensure that the new namespace entries are
+accepted as standards.  If a new set of names are chosen poorly, and
+the EFS community chooses a different set of names, you may very well
+find yourself getting familiar with how to migrate a namespace, which
+while possible, is extremely non-trivial.
+
+=head2 Adding An Entirely New Platform Hierarchy
+
+The definition of a new platform hierarchy is that the new set of
+definitions links in no way to any existing platform or instance
+definitions.  That is, none of the new definitions have any backwards
+or emulates values that match existing definitions.
+
+This process is best explained with a concrete example.  The initial
+EFS releases includes definitions for three basic platform
+hierarchies:
+
+    Linux on Intel
+    Solaris on Sparc
+    Solaris on Intel
+
+Solaris on Intel was a very straight forward set of platforms and
+instances to define, simply because the building blocks (the cpu, os
+and osrel) values are all well defined for both Linux on Intel and
+Solaris on Sparc, so implementing Solaris on Intel is just a matter of
+recombining the existing tokens.
+
+=head3 Choosing the Root Platform
+
+A "root platform" is defined as a platform which has no backwards or
+emulates definitions.  Other platforms will be backwards compatible
+with the root, and other platforms will emulate the root, but the root
+itself has no such "parents" in the platform hierarchy.
+
+The issue here is that you have to choose the oldest OS release with
+which to begin supporting this new hierarchy.  The general guideline
+the EFS team uses is to discourage the use of old unsupported
+operating systems, and deprecated software releases.  For the initial
+platform namespace in EFS 3, we chose values that start with the
+oldest supported release form each vendor.
+
+For RHEL, the oldest release defined in EFS 3 is RHEL 5.  For Solaris,
+the oldest release defined is Solaris 10.  For Ubuntu, the oldest
+release is the most recent 
+
+However, it is worth pointing out than in the legacy EFS 2 environment, 
+
+=head2 Extending An Existing Platform Hierarchy, going forwards
+
+This is probably the most common operation that will be performed on
+the platform namespace.  In the default EFS 3 platform namespace, we
+have defined values for the next major OS for each of the major
+operating systems.  For example, RHEL 6 doens't exist yet, but we know
+that it will, so it makes sense for our namespace to be built with
+existing symlinks for the new OS, so that it can be introduced with
+minimal pain.
+
+That is, so that it can be introduced to the environment without going
+through B<this> process.  Let's presume that the RHEL 6 names were
+ommited from the EFS 3 definitions, and you have already build out a
+lot of RHEL 5 infrastructure, when management drops RHEL 6 in your lap
+and says we need it supported by Monday.  (Not that anything like this
+ever happens in the real world, of course.  Right?).
+
+For this example, we'll assume that only the RHEL 5 names have been
+defined, and that the platform and instance namespaces look like:
+
+    Platform       Backwards  Emulates
+    ========       =========  ========
+    x86-32.rhel.5  NULL       NULL
+    x86-64.rhel.5  NULL       x86-32.rhel.5
+
+    PlatformInstance  Platform         Backwards  Emulates
+    ================  ========         =========  ========
+    amd32.rhel.5      x86-32.rhel.5    NULL       NULL
+    amd64.rhel.5      x86-64.rhel.5    NULL       amd32.rhel.5
+    ia32.rhel.5       x86-32.rhel.5    NULL       NULL
+    ia64.rhel.5       x86-64.rhel.5    NULL       ia32.rhel.5
+
+The first step in any platform namespace operation is to but EFS into
+maintenance mode:
+
+    efs define parameter maintenance_mode true
+
+Then, we define the platforms and instances for RHEL 6.
+
+    efs define platform x86-32.rhel.6 x86-32.rhel.5
+    efs define platform x86-64.rhel.6 x86-64.rhel.5 x86-32.rhel.6
+
+    efs define platforminstance amd32.rhel.6 x86-32.rhel.6 amd32.rhel.5
+    efs define platforminstance amd64.rhel.6 x86-64.rhel.6 \
+        amd64.rhel.5 amd32.rhel.6
+    efs define platforminstance ia32.rhel.6 x86-32.rhel.6 ia32.rhel.5
+    efs define platforminstance ia64.rhel.6 x86-64.rhel.6 \
+        ia64.rhel.5 ia32.rhel.6
+
+The new platform and instance namespace now looks like:
+
+    Platform       Backwards      Emulates
+    ========       =========      ========
+    x86-32.rhel.5  NULL           NULL
+    x86-32.rhel.6  x86-32.rhel.5  NULL
+    x86-64.rhel.5  NULL           x86-32.rhel.5
+    x86-64.rhel.6  x86-64.rhel.5  x86-32.rhel.6
+
+    PlatformInstance  Platform         Backwards     Emulates
+    ================  ========         =========     ========
+    amd32.rhel.5      x86-32.rhel.5    NULL          NULL
+    amd32.rhel.6      x86-32.rhel.6    amd32.rhel.5  NULL
+    amd64.rhel.5      x86-64.rhel.5    NULL          amd32.rhel.5
+    amd64.rhel.6      x86-64.rhel.6    amd64.rhel.5  amd32.rhel.6
+    ia32.rhel.5       x86-32.rhel.5    NULL          NULL
+    ia32.rhel.6       x86-32.rhel.6    ia32.rhel.5   NULL
+    ia64.rhel.5       x86-64.rhel.5    NULL          ia32.rhel.5
+    ia64.rhel.6       x86-64.rhel.6    ia64.rhel.5   ia32.rhel.6
+
+Now, it is possible to extend the existing .exec directories, in both
+/efs/dev and /efs/dist, globally, such that any release with support
+for RHEL 5 will have additional symlinks added for RHEL 6.  This
+command is heavily parallelized, but it can still take a very long
+time to complete.
+
+    efs execlink any
+
+It's that simple, from the operators perspective, but that masks an
+incredibly complex process on the backend.  See the documentation for
+'efs execlinks any' for how this operations can be controlled.  The
+paranoid administrators can run this command cell by cell, region by
+region, celltype by celltype.  The bold and brave can trust the EFS
+test suite, and run this command once, and let it fly.  YMMV, as
+usual.
+
+Once this operation is complete, the last thing to do is take EFS out
+of maintanance mode:
+
+    efs undef parameter maintenance_mode
+
+At this point, any RHEL 6 machine with the EFS client will now be able
+to transparently access the existing RHEL 5 infrastructure in /efs.
+On a case by case basis, anything can now be built independently for
+RHEL 6.
+
+=head2 Extending An Existing Platform Hierarchy, going backwards
+
+Let's suppose that you define a new platform hierarchy starting with
+OS version 5, bootstrap your EFS domain, build out the basic EFS
+infrastructure, and then start using this wonderful new environment to
+make your enterprise scale better.  Then management comes to you and
+drops this bomb:
+
+    "Look, I know we said we don't want to support version 4, but if
+    we don't, the world as we know it will cease to exist, a worm hole
+    will open, and you will be sucked into a parallel universe.  Or,
+    you'll be fired."
+
+In other words, someone tries to leave an old platform behind, and now
+you're told that you can't.  Most sysadmin with any significant
+experience will relate to the above imaginary scenario.
+
+It is possible to extend the namespace backwards, to an older OS
+release.  The easy part is changing the namespace, but the hard part
+is rebuilding and extending the existing infrastructure to the new
+platform.  Let's use a real example here.  Suppose you decided to
+start your Solaris on Sparc infrastructure with Solaris 11, and you
+want to forget about Solaris 10.  The Solaris 11 platforms would be:
+
+    Platform         Backwards  Emulates
+    ========         =========  ========
+    x86-32.sunos.11  NULL       NULL
+    x86-64.sunos.11  NULL       x86-32.sunos.11
+
+The instances would be:
+
+    PlatformInstance  Platform         Backwards  Emulates
+    ================  ========         =========  ========
+    amd32.sunos.11    x86-32.sunos.11  NULL       NULL
+    amd64.sunos.11    x86-64.sunos.11  NULL       amd32.sunos.11
+    ia32.sunos.11     x86-32.sunos.11  NULL       NULL
+    ia64.sunos.11     x86-64.sunos.11  NULL       ia32.sunos.11
+
+Adding the Solaris 10 names is done as follows.  Remember, for ALL
+changes to the platform namespace, EFS should be in maintenance mode,
+to avoid someone making changes to a .exec tree while the platform
+namespace is in flux.
+
+    efs define parameter maintenance_mode true
+
+First, define the new root platforms and instances:
+
+    efs define platform x86-32.sunos.10
+    efs define platform x86-64.sunos.10 --emulates x86-32.sunos.10
+
+    efs define platforminstance amd32.sunos.10 x86-32.sunos.10
+    efs define platforminstance amd64.sunos.10 x86-64.sunos.10 \
+        --emulates amd32.sunos.10
+    efs define platforminstance ia32.sunos.10 x86-32.sunos.10
+    efs define platforminstance ia64.sunos.10 x86-64.sunos.10 \
+        --emulates ia32.sunos.10
+
+Next, redefine the Solaris 11 names to refer to the new Solaris 10
+names.
+
+    efs define platform x86-32.sunos.11 x86-32.sunos.10
+    efs define platform x86-64.sunos.11 x86-64.sunos.10 x86-32.sunos.11
+
+    efs define platforminstance amd32.sunos.11 x86-32.sunos.11 amd32.sunos.10
+    efs define platforminstance amd64.sunos.11 x86-64.sunos.11 \
+        amd64.sunos.10 amd32.sunos.11
+    efs define platforminstance ia32.sunos.11 x86-32.sunos.11 ia32.sunos.10
+    efs define platforminstance ia64.sunos.11 x86-64.sunos.11 \
+        ia64.sunos.10 ia32.sunos.11
+
+The new platform and instance definitions now look like this:
+
+    Platform         Backwards        Emulates
+    ========         =========        ========
+    x86-32.sunos.10  NULL             NULL
+    x86-32.sunos.11  x86-32.sunos.10  NULL
+    x86-64.sunos.10  NULL             x86-32.sunos.10
+    x86-64.sunos.11  x86-64.sunos.10  x86-32.sunos.11
+
+    PlatformInstance  Platform         Backwards       Emulates
+    ================  ========         =========       ========
+    amd32.sunos.10    x86-32.sunos.10  NULL            NULL
+    amd32.sunos.11    x86-32.sunos.11  amd32.sunos.10  NULL
+    amd64.sunos.10    x86-64.sunos.10  NULL            amd32.sunos.10
+    amd64.sunos.11    x86-64.sunos.11  amd64.sunos.10  amd32.sunos.11
+    ia32.sunos.10     x86-32.sunos.10  NULL            NULL
+    ia32.sunos.11     x86-32.sunos.11  ia32.sunos.10   NULL
+    ia64.sunos.10     x86-64.sunos.10  NULL            ia32.sunos.10
+    ia64.sunos.11     x86-64.sunos.11  ia64.sunos.10   ia32.sunos.11
+
+Finally, once the new definitions are complete, take EFS out of
+maintenance mode:
+
+    efs undef parameter maintenance_mode
+
+Of course, all you have to done at this point is change the
+definitions in the database.  Since all of the existing installs are
+for Solaris 11, now the hard part starts: rebuild and redeploying
+existing infrastructure to add support, where necessary, for the new
+platform.
+
+This is documented in the EFS User Guide, in Managing Releases, in the
+section entitled:
+
+    Adding support for a new platform to an existing release
+
+Or, it will be...
+
+=head2 Migrating from One Platform Hierarchy to Another
+
+We fully expect the platform and instance namespace to change, as well
+as grow.  While we are confident that the default EFS 3 names have
+been well chosen, and that most sites will find them sufficient for
+leveraging EFS successfully, EFS is prepared for the namespace to
+change.
+
+This functionality was developed primarily to allow us to migrate the
+legacy EFS 2 environment (which was entirely proprietary) to the EFS 3
+namespace, but the same mechanism can be used to change the namespace
+going forward, in the event that the community decides on an improved
+set of conventions.
+
+We will explain this process using the real world example this
+functionality was designed for.  The EFS 2 definitions for 32 bit
+Solaris on Sparc were created using "sparc" to identify the chipset.
+In EFS 3, we decided to make everything symmetric, and include both 32
+and 64 in B<all> of the chipset names.  In addition, we decided to
+drop "5." from the osrel tokens, and just use the Solaris release
+number (10, 11, etc).
+
+In order to upgrade the EFS 2 environment to the EFS 3 namespace
+standards, we will have to rename the platforms and instances as
+follows.
+
+First, we put EFS into maintenance mode:
+
+    efs define parameter maintenace_mode true
+
+The old 32 bit Solaris on Sparc platforms and instances are defined as:
+
+    Platform           Backwards          Emulates
+    ========           =========          ========
+    sparc.sunos.5.10   NULL               NULL
+    sparc.sunos.5.11   sparc.sunos.5.10   NULL
+
+    PlatformInstance    Platform           Backwards         Emulates
+    ================    ========           =========         ========
+    sun4u.sunos.5.10    sparc.sunos.5.10   NULL              NULL
+    sun4u.sunos.5.11    sparc.sunos.5.11   sun4u.sunos.5.10  NULL
+    sun4v.sunos.5.10    sparc.sunos.5.10   NULL              NULL
+    sun4v.sunos.5.11    sparc.sunos.5.11   sun4v.sunos.5.11  NULL
+
+Next, we rename the platforms and the instances:
+
+    efs rename platform sparc.sunos.5.10 sparc32.sunos.10
+    efs rename platform sparc.sunos.5.11 sparc32.sunos.11
+
+    efs rename platforminstance sun4u.sunos.5.10 sun4u32.sunos.10
+    efs rename platforminstance sun4u.sunos.5.11 sun4u32.sunos.11
+    efs rename platforminstance sun4v.sunos.5.10 sun4v32.sunos.10
+    efs rename platforminstance sun4v.sunos.5.11 sun4v32.sunos.11
+
+The platform and instance namespace now looks like:
+
+    Platform           Backwards          Emulates
+    ========           =========          ========
+    sparc32.sunos.10   NULL               NULL
+    sparc32.sunos.11   sparc32.sunos.10   NULL
+
+    PlatformInstance    Platform           Backwards         Emulates
+    ================    ========           =========         ========
+    sun4u32.sunos.10    sparc32.sunos.10   NULL              NULL
+    sun4u32.sunos.11    sparc32.sunos.11   sun4u32.sunos.10  NULL
+    sun4v32.sunos.10    sparc32.sunos.10   NULL              NULL
+    sun4v32.sunos.11    sparc32.sunos.11   sun4v32.sunos.11  NULL
+
+In addition, the following platform and instance B<aliases> are
+created for the old names.
+
+    Alias              Platform
+    =====              ========
+    sparc.sunos.5.10   sparc32.sunos.10
+    sparc.sunos.5.11   sparc32.sunos.11
+    
+    Alias              PlatformInstance
+    ================   ================
+    sun4u.sunos.5.10   sun4u32.sunos.10
+    sun4u.sunos.5.11   sun4u32.sunos.11
+    sun4v.sunos.5.10   sun4v32.sunos.10
+    sun4v.sunos.5.11   sun4v32.sunos.11
+
+Once the new definitions are all in place, the existing .exec
+directories need to be updated, so that all existing installs using
+the old names have symlinks for the new names.
+
+    efs execlinks any
+
+Once this command has been complete, then take EFS out of maintenance
+mode.
+
+    efs undef parameter maintanance_mode
+
+What does this accomplish?  You can't get rid of the old names as long
+as they are used by existing installs.  In the case of instances, you
+can't get rid of the alias names until you are are certain that none
+of your clients are using those names to mount the /.efs volumes.  In
+practice, removing the old names may prove to be very difficult,
+depending on how much existing infrastructure has been built using the
+old names, and how many clients are using them.
+
+EFS can prevent you from undefining an alias, if and B<only> if, it
+has been used for installs somewhere in /efs.  EFS can not prevent you
+from removing an alias, if it is not used for installs (which is more
+often than not the case), since there is no way to centrally audit
+which clients are using each name.   
+
+What this accomplishes is preventing anyone from using the old names
+for new instals in new releases, going forward.  You may very well
+find that you stuck with the old names, defined as aliases, for
+eternity.
+
+=cut    

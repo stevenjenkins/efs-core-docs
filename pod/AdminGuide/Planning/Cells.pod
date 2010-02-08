@@ -1,0 +1,177 @@
+
+=head1 Designing an EFS Cell Namespace
+
+Before one can install and configure your first EFS cell, some thought
+has to be given to the namespace to be used for the cell names.  EFS
+cell names are not ad-hoc, but are derived from a well defined four
+level hierarchy of the root domain, region, campus and location.  This
+namespace is the foundation for managing your global EFS
+infrastructure, and once chosen, the names will be difficult to
+change.
+
+=head2 Root Domain
+
+This is the root DNS domain name under which your entire EFS
+infrastructure will be configured.  This should represent a single,
+unified administrative domain.  Since EFS will be sharing data over
+NFS among the EFS clients of the various cells, it is important that
+this domain represent a single unified UNIX uid/gid namespace as well.
+
+If you do not have an integrated, centrally managed uid/gid namespace,
+then you should seriously consider creating multiple independent EFS
+domains.  EFS can only be as secure as the underlying NFS
+infrastructure on which it is based.
+
+The root domain will typically be the top level domainname of your
+organization, for example:
+
+    bigbank.com
+    foo.org
+
+If you are creating an EFS infrastructure for a subdomain of your
+organization, then you might use a subdomain like:
+
+    engineering.bigbank.com
+
+Remember that EFS supports both development and production cells, and
+there is no support for inter-domain sharing of information, so we
+recommend creating a single domain that can support your entire
+organization.
+
+The rest of these examples in this document will assume a root domain
+of "example.com".
+
+=head2 Region Names
+
+The regions are the first sub domain of the root, and they function to
+group the campuses together.  The region can be geographic or
+organizational, as fits the support model of your organization.  Bear
+in mind that campuses group together physical locations (data
+centers), so which ever convention is used, the region is a
+fundamentally geographic concept.
+
+For example one of the possible conventions for region names would be
+geographic continent names:
+
+    Region  Description
+    ------  -----------
+    na      North America
+    sa      South America
+    eu      Europe
+    af      Africa
+    as      Asia
+    au      Australia
+    an      Antartica
+
+Another example might be top level organizational names, for example,
+the region conventions used at the origianl EFS developer's employer
+are:
+
+    Region  Description
+    ------  -----------
+    amrs    Americas
+    emea    Europe, Middle East, Africe
+    aja     Asia, Japan, Australia[*]
+
+Choose these names carefully, as they will be very difficult to change.
+
+[*] Yes, we know that Japan is part of Asia. 
+
+=head2 Campus Names
+
+A campus is the second subdomain, and they function to group together
+locations, which are essentially data centers.  Campuses are intended
+to represent collections of locations which serve a single MAN
+(metropolitan area network).  We recommend that campus names be based
+on the main city around which a given MAN is based, even if the MAN
+spans multiple cities.  The naming convention we recommend is to use
+the UN/LOCODE identifier for the primary city, without the country
+code.  If conflicts arise as a result of dropping the country code,
+then simply choose a reasonable alternative as an exception.
+
+As a reference, the UN/LOCODE database can be found here:
+
+    http://www.unece.org/cefact/locode/service/location.htm
+
+For example, consider a large MAN that spans New York City, as well as
+data centers in New Jersey, Pennsylvania, and maybe even other nearby
+states.  The central city in this case is NYC, so we would recommend
+using "nyc" as the campus name.
+
+Some example campus names would be:
+
+    Campus  Description
+    ------  -----------
+    nyc     New York City, NY, USA
+    lon     London, England
+    tyo     Tokyo, Japan
+    hkg     Hong Kong
+    sin     Singapore
+
+=head2 Location Names
+
+A location is essentially intended to represent a single data center.
+Location names must be unique, even though they can be fully qualified
+by the campus, region and root domain.  We recommend creating short 3
+to 5 character names based on the most commonly known name of the data
+center site, building, or address.  In most cases, we expect there to
+be existing conventions to leverage.
+
+Some example location names might be:
+
+    Location  Description
+    --------  -----------
+    lvt       Levvitown, PA Data Center
+    hqb       Head Quarters Building
+    abc       Acme Banking Center
+
+Remember that these names must be globally unique.
+
+=head2 Cell Names
+
+The final component of the fully qualified EFS cell name is used to
+distinguish multiple cells in a single data center.  Strictly
+speaking, EFS can support as many cells in a single data center as
+needed, but we recommend only two: dev and prod.  A cell is the
+smallest unit which can be updated by the EFS distribution mechanism,
+and the strength of EFS is the ability to manage the entire dev and/or
+prod environment centrally.  One could break down a single data center
+into multiple prod cells, or even multiple dev cells, but this is not
+how we intended it to be used.   YMMV applies, as usual.
+
+Our recommendation is therefore to keep the cell names short and
+simple, and to use a single letter (d for dev, and p for prod) for the
+final cell name component.
+
+For purposes of illustration, we'll assume that continents have been
+chosen for the region names.  Then, some sample cell names might be:
+
+    d.abc.nyc.na.example.com
+    p.def.lon.eu.example.com
+    p.ghi.tyo.as.example.com
+
+=head1 Relationship Between Cell Names and DNS
+
+One thing that should be obvious at this point, since we based this
+hierarchy on a DNS domainname that is almost certainly already used to
+manage the hostnames for your organization, is that these cell names,
+and the location/campus/region hierarchy seems to imply a specific DNS
+domain structure.
+
+It does, but strictly speaking, there is no requirement that the same
+multi-level hierarchy be implemented in your DNS namespace.
+Obviously, if you have an existing multi-level hierarchy similar to
+this, it would make sense to leverage it.
+
+EFS assumes these names represent the DNS namespace in exactly one
+place: rc.efs, the client side boot script that creates the EFS NFS
+mounts, dynamically at boot time.  The EFS client can be configured
+with just two pieces of information: the EFS cell name, and the EFS
+client hosttype.  The client searches the DNS namespace for the NFS
+server for it's cell using these names, and through the clever use of
+CNAME records, the requirement for creating this entire multi-level
+namespace in DNS can be made optional.
+
+See the EFS client documentation for more information.
+
+=cut    

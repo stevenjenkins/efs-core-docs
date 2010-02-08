@@ -1,0 +1,304 @@
+
+=head1 Bootstrapping the Server Environment
+
+This document will discuss how to bootstrap a new EFS domain, from the
+ground up.
+
+=head1 Initial Requirements
+
+In order to get the first EFS dev cell up and running, you will need
+the following resources:
+
+=head2 RDBMS: Oracle or MySQL
+
+This database will be THE database for the entire EFS infrastructure,
+for both dev and prod cells, so it should be on the most reliable,
+stable and well supported configuration possible.
+
+You will need to know the full DBI connection string for this
+database, for example, something like:
+
+    DBI:Oracle:host=name.of.server.com;port=12345;sid=EFSP1
+    DBI:mysql:database=efs;host=name.of.server.com;port=12345
+
+You will also need the username/password for at least 2 different
+users: the administrative login, which should have access to create
+and alter objects in the database (dbouser) and the readwrite login
+(rwuser), to which full write access (insert, update, delete) will be
+granted to all the database objects.
+
+In our examples, we will assume the dbouser is 'efs_dbo', and the
+rwuser is 'efs_rw'.
+
+=head2 EFS Server
+
+A Linux server running at least Red Hat Enterprise Linux 5.1 or newer.
+Other Linux platforms will likely work, but have not yet been tested.
+This host will be configured as the primary SSL server, as well as the
+initial EFS server.
+
+=head2 NFS Server
+
+A separate NFS server or NAS filer is required for each EFS cell.  To
+build the initial dev cell for the bootstrap process, the hostname
+(FQDN) of the initial NFS server is required.
+
+=head3 Two NFS Volumes: /vol/efs_dist and /vol/efs_dev_x_yyy
+
+These volumes must be exported to the initial EFS server with full
+root access.  The compile hosts do NOT need root access to these
+volumes, just the EFS server.  The name of the efs_dev volume is based
+on the name of the dev cell.  If the full cell name is:
+
+    x.yyy.foo.bar.example.com
+
+then the volume name would be that shown above.
+
+Each volume must have a single top level directory, named "efs_qtree".
+On a NetApp NAS filer, this would be an actual qtree object.  On a
+vanilla NFS server, it can be a plain directory.
+
+=head1 Configuring the Bootstrap Process
+
+It is possible to write a single configuration file for all of these
+bootstrap utilities, export the pathname in an environment variable,
+and then just invoke each script in order, with no special command
+line arguments.  This is the recommended method for automating this
+process.
+
+All of the bootstrap scripts accept command line arguments to either
+specify the pathname to the config file, or to specify the necessary
+options explicitly.
+
+Since most of the defaults are reasonable, only the required options
+need to be specified in the config file.  A sample minimal config file
+would like something like this:
+
+    #
+    # This is a sample efs bootstrap configuration file, used by the
+    # various efs_bootstrap_* utilities
+    #
+    [global]
+        root_domain = domain.org
+
+    [database]
+        connect     = DBI:mysql:database=efs;host=dbserver.domain.org;port=12345
+        dbouser     = efs_dbo
+        rwuser      = efs_write
+
+    [cell]
+        name        = a.bbb.ccc.ddd.domain.org
+        fileserver  = some.fileserver.domain.org
+        devshare    = /vol/efs_dev_a_bbb
+        distshare   = /vol/efs_dist
+
+To use the recommended approach, write the necessary information into
+a file and export the following environment variable:
+
+    export EFS_BOOTSTRAP_CONFIG=/path/to/bootstrap.conf
+
+=head1 Installing the EFS Software
+
+In theory, this is as simple as installing any other perl module. Just
+unpack the distribution, and then do the following:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+In reality, however, EFS has a very long list of dependencies on CPAN
+modules, some of which have dependencies on system packages which are
+often optionally installed on many hosts, so installing EFS can be a
+lot more work than the four simple commands above.
+
+To simplify an otherwise complex and onerous process, we have provided
+a script that automates the steps above, and the installation of most
+of the dependencies.
+
+=head2 efs_bootstrap_install
+
+In the util subdirectory of the source distribution, we provide a
+script to automate bootstrapping the installation of perl, EFS, and
+all of it's CPAN dependencies.  This script is not installed
+permanently, and must be run out of the source tree directly.  For
+additional defails on invoking the script, see it's man page.
+
+Of course, since the man page isn't installed until EFS has been
+successfully installed, you'll need to do the following to read it:
+
+    cd /path/to/source/distro
+    pod2text < doc/efs_bootstrap_install.pod | less
+
+By default, everything is installed with a prefix of /usr/efs, so that
+EFS and it's critical dependencies are all managed in a separate
+directory structure.  Eventually, you can run EFS out of /efs/dist
+directly, and use it's own change control mechanisms to update the
+core EFS software itself, but initially, we recommend bootstrapping
+everything into /usr/efs.
+
+=head1 Configuring the EFS Database
+
+EFS requires either an Oracle or MySQL database.  Setting up the
+database server, managing replication, backups, and other DBA related
+functions are not managed by the EFS software at all.  The prerequisie
+for configuring the first EFS servers, and the first EFS dev cell is a
+stable database, with the correct version of the EFS schema.
+
+=head2 Database Requirements
+
+We require either a MySQL or Oracle database, with three database
+logins for the EFS application.
+
+=head3 MySQL Requirements
+
+EFS has been tested against MySQL 5.1.40, using the InnoDB engine.  Be
+sure to use a database engine that supports foreign keys and
+transactions, and be sure to enable remote logins on the database.  A
+database named "efs" is required.
+
+=head3 Oracle Requirements
+
+EFS has been tested against an Oracle 10g database, using the Oracle
+Instant Client version 11.1.0.6.  Other combinations should work, but
+as usual, YMMV.  
+
+=head2 Login Requirements
+
+There are three users required for EFS: the administrative user, the
+readwrite user, and the readonly user.
+
+=head3 The administrative user (dbouser)
+
+This login is used for no purpose other than defining and updating the
+DDL SQL for the database.  It is not used by the EFS software during
+normal operations.  This user would normally be the database
+administrator, but it can be a normal user, provided it has the
+ability to create tables in the target database.
+
+If you can not obtain such administrative access to your database (and
+this is very common in many large scale environments), then you will
+have to generate the SSL SQL files and provide them to your database
+administrators, who can then define the objects for you.
+
+=head3 The readwrite user (rwuser)
+
+This is the primary login which will be used by the EFS server
+processes.  This user requires select, update, insert and delete
+rights on all tables (and for Oracle, sequences) in the EFS database.
+
+=head3 The readonly user (rouser)
+
+This login should be configured with nothing more than select access
+to all objects in the EFS database.  This user is intended for the
+purpose of developing auditing and reporting utilities against the EFS
+database, which do not need write access to any of the objects.
+
+=head2 Granting Database Access
+
+=head2 MySQL
+
+Once the above user's have been created, then they need to be given
+access to the contents of the "efs" database.  The following grants
+need to be made, using the appropriate usernames:
+
+    GRANT ALL ON efs.* TO 'dbouser'\@'%' WITH GRANT OPTION;
+    GRANT SELECT, UPDATE, INSERT, DELETE ON efs.* TO 'rwuser'\@'%';
+    GRANT SELECT ON efs.* TO 'rouser'\@'%';
+
+=head2 Oracle
+
+The DDL SQL for Oracle includes specific grants for each and every
+object (tables and sequences) created, so the permissioning is handled
+automatically.
+
+=head2 Bootstrapping the DDL SQL
+
+We provide a script to bootstrap the DDL SQL in the database, and
+write the initial version of /etc/efs/server.conf.  Before you can
+invoke the script, you will need the following information:
+
+=over
+
+=item DBI connection string
+
+The DBI connection string for accessing the database typically looks
+something like this:
+
+   DBI:mysql:database=efs;host=some.host.your.domain;port=12345
+   DBI:Oracle:host=some.host.your.domain;port=12345;sid=FOO
+
+For systems using other naming services, or products such as Oracle's
+clustering software, the syntax might be radically different.  The
+specific syntax depends on how your database infrastructure is
+managed.
+
+=item Username/password for rwuser, dbouser and rouser
+
+If the dbouser username is not provided, then the script will generate
+the DDL SQL files, instead of actually uploading them.
+
+=back
+
+The script itself is invoked from the root of the source distribution.
+
+    ./util/efs_bootstrap_database 
+
+If you prefer not to specify passwords on the command line, or in the
+config file, then omit those options, and you will be queried for each
+password, individually.
+
+For information on how to invoke efs_bootstrap_database, and it's CLI
+options, see it's man page.
+
+Note that this script also does not need to be run as root.  It can be
+run as a non-root user, provided it has write access to
+/var/efs/etc/passwd and /etc/efs.
+
+=head1 Configuring the EFS Domain and the Initial Dev Cell
+
+At this point, we have the software installed on our initial EFS
+server, and we have the EFS DDL SQL defined in the database.  Now, we
+can bootstrap our new EFS domain, and get EFS fully functioning on the
+EFS server itself.  This script is also run from the root of the
+source distribution:
+
+    ./util/efs_bootstrap_domain
+
+For information on how to invoke efs_bootstrap_domain, and it's
+configuration options, see it's man page.
+
+This script, unlike the others, B<MUST> be run as root.  The others
+will typically be run as root, but strictly speaking, simply need
+write access to a number of specific files and directories.
+
+=head1 Initializing the EFS Namespace
+
+The last script to bootstrap the environment also serves to test the
+success of the previous scripts.  This last utility is B<NOT> run as
+root, it is run as one of the members of the "efsops" administrative
+group.  This script, like the others, is run from the root directory
+of the source distribution:
+
+    ./util/efs_bootstrap_namespace
+
+For information on how to invoke efs_bootstrap_domain, and it's
+configuration options, see it's man page.
+
+Once this has completed, then the initial dev cell is online and
+operational, but the EFS CLI can only be used on the initial EFS
+server.
+
+=head1 The Results
+
+At this point, you now have a fully bootstrapped EFS domain, with it's
+initial dev cell, an EFS server running efsd, and a fully configured
+database.  However, this isn't terribly exciting, because you can only
+use EFS on this one machine.
+
+The next stage of the bootstrapping process involves building the EFS
+distribution on each of the UNIX platforms you have chosen to support,
+and building the client packages that will be used to install the EFS
+client throughout your environment.
+
+=cut
