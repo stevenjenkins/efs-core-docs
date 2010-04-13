@@ -289,6 +289,37 @@ Once this has completed, then the initial dev cell is online and
 operational, but the EFS CLI can only be used on the initial EFS
 server.
 
+=head1 Building and installing the efsclient and efsserver packages
+
+If you reboot the efsserver at this point, it should be obvious that
+the client NFS mounts will not be created, not will efsd startup.  In
+order to have these services survive a reboot, you need to install the
+efsclient and efsserver packages.  In order to do that, you'll need to
+build them.
+
+=head2 RHEL, CentOS, Fedora
+
+All of these systems use the rpm format for managing local packages,
+even if you use a package manager like yum to install them.  Building
+the rpms for efsclient and efsserver is as simple as:
+
+    cd packages/rhel
+    make
+
+This does not need to be done as root, merely a user that has write
+access to the EFS source tree.  This process will create two rpms:
+
+    efsclient-$version-$release.noarch.rpm
+    efsserver-$version-$release.noarch.rpm
+
+Where $version and $release are based on the $VERSION in EFS.pm.  If
+the EFS $VERSION is "x.yyy_zzz", then $version is "x.yyy" and $release
+is "zzz".
+
+These rpms should be installed on the initial efsserver, which should
+then be rebooted to verify that both the EFS client NFS mounts are
+created, and that the efsd daemon starts up.
+
 =head1 The Results
 
 At this point, you now have a fully bootstrapped EFS domain, with it's
@@ -297,8 +328,6 @@ database.  However, this isn't terribly exciting, because you can only
 use EFS on this one machine.
 
 The next stage of the bootstrapping process involves building the EFS
-distribution on each of the UNIX platforms you have chosen to support,
-and building the client packages that will be used to install the EFS
-client throughout your environment.
+distribution on each of the UNIX platforms you have chosen to support.
 
 =cut

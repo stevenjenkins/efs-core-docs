@@ -3,7 +3,7 @@
 
 EFS is designed to support an arbitrary number of heterogeneous client
 platforms, but each and every platform must be supported by the
-efs_platform script, and rc.efs, as well as defined properly in the
+efs_platform script, and efsclient, as well as defined properly in the
 EFS database.
 
 Before you begin bootstrapping your EFS environment, it is critical to

@@ -54,7 +54,6 @@ included in the distribution will be run for you.  These scripts:
 
     efs_platform
     efs_configure_autofs
-    rc.efs
 
 were all designed to be run without first requiring installation, so
 they can be run directly from the source tree as part of this process.

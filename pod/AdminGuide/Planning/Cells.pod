@@ -164,7 +164,7 @@ Obviously, if you have an existing multi-level hierarchy similar to
 this, it would make sense to leverage it.
 
 EFS assumes these names represent the DNS namespace in exactly one
-place: rc.efs, the client side boot script that creates the EFS NFS
+place: efsclient, the client side boot script that creates the EFS NFS
 mounts, dynamically at boot time.  The EFS client can be configured
 with just two pieces of information: the EFS cell name, and the EFS
 client hosttype.  The client searches the DNS namespace for the NFS
