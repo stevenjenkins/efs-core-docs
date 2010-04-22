@@ -97,6 +97,49 @@ a file and export the following environment variable:
 
     export EFS_BOOTSTRAP_CONFIG=/path/to/bootstrap.conf
 
+=head1 Installing the minicpan snapshot
+
+Before building EFS, we recommend downloading one of the minicpan
+snapshots made available by the EFS team.  If you bootstrap the EFS
+install on any given day, using the latest releases of the modules on
+CPAN, there is a very good chance you'll be using a module version we
+have not yet tested, and due to the complexity of EFS, and the
+complexity of many of the API frameworks we use (DBIx::Class and
+Moose, for example), the results may be unstable.
+
+There are two minicpan snapshots available on the OpenEFS website:
+
+    http://ftp.openefs.org/packages/minicpan/stable.tgz
+    http://ftp.openefs.org/packages/minicpan/devel.tgz
+
+If you're installing a stable release of EFS, then use stable,
+otherwise, use devel.  By default, efs_bootstrap_install will look for
+these minicpan repos in /home/minicpan, but you can install them
+whereever you like, and the either configure the minicpan path in the
+bootstrap.conf file:
+
+    [global]
+        minicpan = /some/other/path
+
+Or specify it on the CLI:
+
+    ./util/efs_bootstrap_install --minicpan /some/other/path
+
+These tarballs will unpack into a directory with a date timestamp, for
+example: 2010-04-17.  The "stable" or "devel" pathname should be a
+symlink to this directory, for example:
+
+    /home/minicpan/2010-04-17
+                   devel -> 2010-04-17
+
+If you used an alternate path, then this would be:
+
+    /some/other/path/2010-04-17
+                     devel -> 2010-04-17
+
+Using these snapshots will minimize the installation headaches you
+will almost certainly encounter if you use the bleeding edge of CPAN.
+
 =head1 Installing the EFS Software
 
 In theory, this is as simple as installing any other perl module. Just
@@ -327,7 +370,8 @@ initial dev cell, an EFS server running efsd, and a fully configured
 database.  However, this isn't terribly exciting, because you can only
 use EFS on this one machine.
 
-The next stage of the bootstrapping process involves building the EFS
-distribution on each of the UNIX platforms you have chosen to support.
+The next steps involve building EFS and it's dependencies into the
+/efs namespace, so that we can use EFS on clients with the minimum
+number of locally installed software packages.
 
 =cut
