@@ -4,6 +4,36 @@
 This document will discuss how to bootstrap a new EFS domain, from the
 ground up.
 
+=head1 Command Summary
+
+Please read this entire document to understand the requirements for,
+and the steps to, the EFS bootstrap process.  Bootstrapping the EFS
+environment boils down to writing a config file, and then running the
+following commands.
+
+As root:
+
+    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
+    cd /path/to/efs/core/source
+    ./util/efs_bootstrap_install
+    ./util/efs_bootstrap_database
+    ./util/efs_bootstrap_domain
+
+As efsops:
+
+    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
+    cd /path/to/efs/core/source
+    PATH=/usr/efs/bin:$PATH
+    ./util/efs_bootstrap_namespace
+
+The efsclient and efsserver rpms are then built by running, as efsops:
+
+    cd packages/rhel
+    make
+
+Keep reading to understand how to prepare the required infrastructure,
+write the config file, and understand what you're doing.
+
 =head1 Initial Requirements
 
 In order to get the first EFS dev cell up and running, you will need
