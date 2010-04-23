@@ -325,10 +325,6 @@ password, individually.
 For information on how to invoke efs_bootstrap_database, and it's CLI
 options, see it's man page.
 
-Note that this script also does not need to be run as root.  It can be
-run as a non-root user, provided it has write access to
-/var/efs/etc/passwd and /etc/efs.
-
 =head1 Configuring the EFS Domain and the Initial Dev Cell
 
 At this point, we have the software installed on our initial EFS
