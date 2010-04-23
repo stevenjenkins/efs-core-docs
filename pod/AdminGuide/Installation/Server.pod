@@ -13,16 +13,17 @@ following commands.
 
 As root:
 
-    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
     cd /path/to/efs/core/source
+    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
+    PATH=/usr/efs/bin:$PATH
     ./util/efs_bootstrap_install
     ./util/efs_bootstrap_database
     ./util/efs_bootstrap_domain
 
 As efsops:
 
-    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
     cd /path/to/efs/core/source
+    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
     PATH=/usr/efs/bin:$PATH
     ./util/efs_bootstrap_namespace
 
