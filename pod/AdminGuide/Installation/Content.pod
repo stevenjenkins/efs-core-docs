@@ -1,0 +1,50 @@
+
+=head1 Bootstrapping the Content of EFS
+
+This document will describe how to bootstrap the content of the EFS
+namespace, by installing and configuring the efsdeploy utility, and
+then using that to build and deploy the C compilers, perl, and the
+various dependencies of EFS.
+
+=head1 Initial Requirements
+
+If it is not obvious, you must first complete the procedures
+documented in the Server and Client bootstrap documents.
+
+=head2 efsops vs root
+
+Note that all of the procedures documentes here are run as the efsops
+user.  Installing content into /efs never requires root access, and in
+fact, by design, root does not have write permission on the /efs
+namespace on the EFS clients.  Direct use of root is only necessary
+during the server and client bootstrap processes.
+
+=head2 PATH
+
+In all cases, we assume that before running any of the commands shown,
+you have modified your PATH as follows:
+
+    PATH=/efs/dist/efs/core/bootstrap/exec/bin:$PATH
+
+This ensures that the correct versions of efs, perl, etc. are used
+during the process.  Failure to make this PATH customization will
+result in the bootstrap failing as well.
+
+=head1 Installing efsdeploy
+
+Copy the efsdeploy source code local to each of the client platforms,
+and install it.  Now, this is one of the very few times when you get
+to use the standard perl installation procedures for anything you
+install into EFS.  To install efsdeploy, in the root of the efsdeploy
+source tree, simply run:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+=head1 Bootstrapping the compiler
+
+
+
+=cut

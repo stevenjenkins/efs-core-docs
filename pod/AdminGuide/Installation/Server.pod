@@ -19,18 +19,7 @@ As root:
     ./util/efs_bootstrap_install
     ./util/efs_bootstrap_database
     ./util/efs_bootstrap_domain
-
-As efsops:
-
-    cd /path/to/efs/core/source
-    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
-    PATH=/usr/efs/bin:$PATH
-    ./util/efs_bootstrap_namespace
-
-The efsclient and efsserver rpms are then built by running, as efsops:
-
-    cd packages/rhel
-    make
+    su efsops -c ./util/efs_bootstrap_namespace
 
 Keep reading to understand how to prepare the required infrastructure,
 write the config file, and understand what you're doing.
