@@ -22,14 +22,22 @@ As root:
     su efsops -c ./util/efs_bootstrap_namespace
 
 Keep reading to understand how to prepare the required infrastructure,
-write the config file, and understand what you're doing.
+write the config file, and understand what you're doing.  You can also
+run all 4 of the scripts above with one simple wrapper:
+
+    cd /path/to/efs/core/source
+    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
+    ./util/efs_bootstrap_all
+
+If there are issues running any of the individual scripts, you will
+need to run them individually to complete the process.
 
 =head1 Initial Requirements
 
 In order to get the first EFS dev cell up and running, you will need
 the following resources:
 
-=head2 RDBMS: Oracle or MySQL
+=head2 RDBMS: MySQL
 
 This database will be THE database for the entire EFS infrastructure,
 for both dev and prod cells, so it should be on the most reliable,
@@ -38,7 +46,6 @@ stable and well supported configuration possible.
 You will need to know the full DBI connection string for this
 database, for example, something like:
 
-    DBI:Oracle:host=name.of.server.com;port=12345;sid=EFSP1
     DBI:mysql:database=efs;host=name.of.server.com;port=12345
 
 You will also need the username/password for at least 2 different
@@ -202,16 +209,16 @@ everything into /usr/efs.
 
 =head1 Configuring the EFS Database
 
-EFS requires either an Oracle or MySQL database.  Setting up the
-database server, managing replication, backups, and other DBA related
-functions are not managed by the EFS software at all.  The prerequisie
-for configuring the first EFS servers, and the first EFS dev cell is a
-stable database, with the correct version of the EFS schema.
+EFS requires either a MySQL database.  Setting up the database server,
+managing replication, backups, and other DBA related functions are not
+managed by the EFS software at all.  The prerequisie for configuring
+the first EFS servers, and the first EFS dev cell is a stable
+database, with the correct version of the EFS schema.
 
 =head2 Database Requirements
 
-We require either a MySQL or Oracle database, with three database
-logins for the EFS application.
+We require either a MySQL database, with three database logins for the
+EFS application.
 
 =head3 MySQL Requirements
 
@@ -219,12 +226,6 @@ EFS has been tested against MySQL 5.1.40, using the InnoDB engine.  Be
 sure to use a database engine that supports foreign keys and
 transactions, and be sure to enable remote logins on the database.  A
 database named "efs" is required.
-
-=head3 Oracle Requirements
-
-EFS has been tested against an Oracle 10g database, using the Oracle
-Instant Client version 11.1.0.6.  Other combinations should work, but
-as usual, YMMV.  
 
 =head2 Login Requirements
 
@@ -248,7 +249,7 @@ administrators, who can then define the objects for you.
 
 This is the primary login which will be used by the EFS server
 processes.  This user requires select, update, insert and delete
-rights on all tables (and for Oracle, sequences) in the EFS database.
+rights on all tables in the EFS database.
 
 =head3 The readonly user (rouser)
 
@@ -265,15 +266,9 @@ Once the above user's have been created, then they need to be given
 access to the contents of the "efs" database.  The following grants
 need to be made, using the appropriate usernames:
 
-    GRANT ALL ON efs.* TO 'dbouser'\@'%' WITH GRANT OPTION;
-    GRANT SELECT, UPDATE, INSERT, DELETE ON efs.* TO 'rwuser'\@'%';
-    GRANT SELECT ON efs.* TO 'rouser'\@'%';
-
-=head2 Oracle
-
-The DDL SQL for Oracle includes specific grants for each and every
-object (tables and sequences) created, so the permissioning is handled
-automatically.
+    GRANT ALL ON efs.* TO 'dbouser'@'%' WITH GRANT OPTION;
+    GRANT SELECT, UPDATE, INSERT, DELETE ON efs.* TO 'rwuser'@'%';
+    GRANT SELECT ON efs.* TO 'rouser'@'%';
 
 =head2 Bootstrapping the DDL SQL
 
@@ -289,12 +284,10 @@ The DBI connection string for accessing the database typically looks
 something like this:
 
    DBI:mysql:database=efs;host=some.host.your.domain;port=12345
-   DBI:Oracle:host=some.host.your.domain;port=12345;sid=FOO
 
-For systems using other naming services, or products such as Oracle's
-clustering software, the syntax might be radically different.  The
-specific syntax depends on how your database infrastructure is
-managed.
+For systems using other naming services the syntax might be radically
+different.  The specific syntax depends on how your database
+infrastructure is managed.
 
 =item Username/password for rwuser, dbouser and rouser
 

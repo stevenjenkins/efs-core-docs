@@ -13,7 +13,7 @@ documented in the Server and Client bootstrap documents.
 
 =head2 efsops vs root
 
-Note that all of the procedures documentes here are run as the efsops
+Note that all of the procedures documented here are run as the efsops
 user.  Installing content into /efs never requires root access, and in
 fact, by design, root does not have write permission on the /efs
 namespace on the EFS clients.  Direct use of root is only necessary
@@ -42,9 +42,16 @@ source tree, simply run:
     make
     make test
     make install
+    make clean
 
-=head1 Bootstrapping the compiler
+This is because the installation of EFS includes all of the optional
+CPAN modules required by efsdeploy (by design).  As you'll see,
+installing most perl software is usually significantly more complex
+than this, and in fact, efsdeploy is the very tool that you will use
+to automate such installations.
 
+=head1 Bootstrapping the gcc compilers
 
+=head1 Bootstrapping the perl compilers
 
 =cut
