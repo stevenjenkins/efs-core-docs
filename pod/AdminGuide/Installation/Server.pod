@@ -64,6 +64,11 @@ Other Linux platforms will likely work, but have not yet been tested.
 This host will be configured as the primary SSL server, as well as the
 initial EFS server.
 
+=head3 efsops service account and group
+
+A UNIX user and group, both named 'efsops'.  The user must be a member
+of the group as well.
+
 =head2 NFS Server
 
 A separate NFS server or NAS filer is required for each EFS cell.  To
