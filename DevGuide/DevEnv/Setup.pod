@@ -1,0 +1,53 @@
+
+=head1 Setting up the Development Environment
+
+=head2 Building the test.efs Virtual Machines
+
+=head2 Building the boot.efs Virtual Machines
+
+=head2 Compiling and Updating the usr-efs tarballs
+
+This is how to create the usr-efs-YYYY-MM-DD tarballs that are used by
+efs_bootstrap_install to setup /usr/efs.  Note that we're only
+creating these for the 64 bit platforms, since you only need to use
+this on one machine to get things bootstrapped.  The
+efs-core-bootstrap tarballs, however, are needed on each and every
+platform that will eventually be supported, so we build those for both
+32 and 64 bit OSes.
+
+First create the empty target directory:
+
+    mkdir /usr/efs-YYYY-MM-DD
+    ln -s efs-YYYY-MM-DD /usr/efs
+
+In the root directory of the efs-core source tree, run
+efs_bootstrap_install as root, as follows:
+
+    ./util/efs_bootstrap_install --perl=source --skip=efs
+
+It is important that you NOT install EFS into this directory
+structure.  The whole point is to build perl and all the pre-requisite
+CPAN modules without EFS.
+
+Once the build is finished package it up:
+
+    cd /
+    tar zcf /var/tmp/usr-efs-YYYY-MM-DD.tgz usr/efs-YYYY-MM-DD
+
+For a platform of x86-64.rhel.5, this tarball would then be uploaded to:
+
+    ftp-osl.osuosl.org:~/data/packages/bootstrap/x86-64.rhel.5
+
+To make this the default "devel" or "stable" tarball which is
+downloaded, change the appropriate symlinks.
+
+    ssh ftp-osl.osuosl.org
+    cd ~/data/packages/bootstrap/x86-64.rhel.5
+    rm usr-efs-devel.tgz
+    ln -s usr-efs-YYYY-MM-DD.tgz usr-efs-devel.tgz
+
+=head2 Compiling and Updating the efs-core-bootstrap tarballs
+
+=head2 Updating the minicpan tarball
+
+=cut    
