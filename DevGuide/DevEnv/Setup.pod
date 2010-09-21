@@ -162,6 +162,36 @@ The mapping from hostname to platform is managed in the efsdeploy
 platforms.conf file.  See the efsdeploy documentation, or the Content
 Porting Guide for more information.
 
+=head2 Running the EFS Test Suite
+
+In this example, we're assuming a test pair named fooefst01 and
+fooefst02.  In all cases, you normally only need to work on the
+primary test server (the odd numbered one).
+
+We assume that you are using the user "efstest", which is setup for
+this purpose by efs_virtual_machine, and that the efs-core source tree
+you are testing is in
+/home/efstest/dev/efs/core/branches/cool-new-feature.
+
+=head3 As efstest on fooefst01
+
+The default bash configuration for efstest should prepend /usr/efs/bin
+to the PATH, but make sure you are using /usr/efs/bin/perl.
+
+    cd /home/efstest/dev/efs/core/branches/cool-new-feature/source
+    perl Makefile.PL && make
+
+=head3 As root on fooefst01
+
+The root shell does NOT include /usr/efs/bin in the PATH by default,
+to add it:
+
+    PATH=/usr/efs/bin:$PATH
+    cd /home/efstest/dev/efs/core/branches/cool-new-feature/source
+    prove -v -r test
+
+This will run the entire test suite, from start to finish.
+
 =head2 Compiling and Updating the usr-efs tarballs
 
 This is how to create the usr-efs-YYYY-MM-DD tarballs that are used by
