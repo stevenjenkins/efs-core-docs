@@ -3,7 +3,138 @@
 
 =head2 Building the test.efs Virtual Machines
 
+In order to run the real EFS test suite (the code under test/, not the
+placeholder under t/), requires setting up at least two machines.  The
+test suite simulates a real EFS domain with two dev cells and a single
+prod cell.  These machines have to be set up with a number of
+requirements, and getting an arbitrary pair of machines configured by
+hand is very tedious.
+
+The EFS team uses VM infrastructure to setup and run the test suite,
+all of which is automated using the efs_virtual_machine script in the
+efs-utils git repo.  Setting this up requires a total of 3 VMs: one to
+provide the core network services required by the test suite, but not
+managed directly by EFS.  For example: Kerberos, NIS, DNS, etc.  The
+other two machines are ones that run the EFS test suite.
+
+First, create three "raw" VMs.  We create these by installing the
+simplest, minimal set of software when instaling the OS, and then let
+the efs_virtual_machine script handle the rest.
+
+=head3 Choosing a cell name
+
+The entire test environment is built in a standalone top level domain
+".efs".  The test environment will be in test.efs, and the bootstrap
+environment in boot.efs.  The efs_virtual_machine script requires two
+arguments: the cell name, and the function of the machine being built.
+The cell name must be something like:
+
+    t.location.campus.region.test.efs
+
+The only part of the cell name that really matters is the location, as
+the hostnames will be created using the location name as a prefix.
+The EFS development team uses the following boot.efs cell names, for
+example:
+
+    d.mad.sea.us.boot.efs
+    d.fh.nyc.us.boot.efs
+
+This results in hostnames like "madcore", and "fhefsd01", and even
+though all of these *.efs cells are standalone, it's easy to manage
+access to each others development environments, since we coordinated
+the cell names, and the hostnames are all unique.
+
+For these examples, we'll use t.foo.baz.reg.test.efs as the sample
+cell name.
+
+=head3 Configuring the core server
+
+The first VM must be an x86_64 CentOS 5.4 server.  The other test
+machine pairs can be any supported EFS client operating .  However,
+the code to setup the core services has only been tested on CentOS
+5.4.
+
+Copy the efs_virtual_machine script to the server, and run it as
+follows:
+
+    efs_virtual_machine t.foo.baz.reg.test.efs core
+
+This will auto-configure a long list of operating system services, and
+then reboot the machine when successful.
+
+=head3 Configuring the test machine pairs
+
+The EFS test suite requires a pair of machines, and you can create
+multiple test pairs for running the test suite on different platforms.
+One of the two will serve as the primary server on which the test
+suite is run, and the other will serve as a remote cell/efsserver for
+the purposes of the test suite.  These machines must be created in
+pairs, and the hostnames matter.  The 01 host goes with 02, 03 with
+04, etc.
+
+Create a pair of VMs, and on one run:
+
+    efs_virtual_machine t.foo.baz.reg.test.efs efst01
+
+and on the other:
+
+    efs_virtual_machine t.foo.baz.reg.test.efs efst02
+
+The client services will be auto-configured, and both VMs rebooted
+when successful.
+
+Additional machine pairs can be created using "efst03" and "efst04".
+The efs_virtual_machine script has support for names through 09 and
+10.
+
 =head2 Building the boot.efs Virtual Machines
+
+The boot.efs setup is for the purpose of testing the procedures for
+bootstrapping a new EFS domain.  We also use this environment to
+bootstrap the binary content of EFS that is shared via openefs.org,
+for each new platform that EFS is ported to.  This is still part of
+the dataless development environment, and the goal is to acheive
+complete reproducibility of the entire infrastructure from the ground
+up.
+
+The cell name for the boot.efs environment must begin with "d", and
+end in "boot.efs".  The location name will be used as the prefix for
+the auto-generated hostnames, so if you are setting up both a test.efs
+and boot.efs environment, make up two cell names with different
+locations.
+
+Since efs_virtual_machine is used to create all of them, they can
+co-exist, since a different set of fixed host IP addresses is used for
+each domain.
+
+=head3 Configuring the core server
+
+The core server for boot.efs is very similar to the core server for
+test.efs, but they are required to be separate machines.  The same
+requirement for CentOS 5.4 holds for boot.efs as well.
+
+Copy efs_virtual_machine to the new VM and run:
+
+    efs_virtual_machine d.bar.baz.reg.boot.efs core
+
+This will do the same thing is does for the test.efs server.
+Configure core services and reboot.
+
+=head3 Configuring the initial EFS server
+
+The initial EFS server is the next machine you have to build.  This is
+the machine you will use to run the bootstrap code, and it will become
+the EFS server for the initial dev cell that will be created.
+
+This machine is configured using:
+
+    efs_virtual_machine d.bar.baz.reg.boot.efs efsd01
+
+In this example, the resulting hostname will be barefsd01.
+
+=head3 Configuring compile servers
+
+
 
 =head2 Compiling and Updating the usr-efs tarballs
 

@@ -1,0 +1,21 @@
+
+=head1 EFS Client Porting Guide
+
+This document will walk through the process of porting the EFS
+client to a new platform.
+
+Before you start this process, you need to have a fully bootstrapped
+and operational EFS domain, which means you need to start out with EFS
+installed and running on one of the existing, supported platforms.
+
+=head1 Choosing Platform and Instance Names
+
+Before you can do anything with a new platform, the EFS platform and
+instance names have to be chosen.  This can not be done in a vacuum,
+if you are planning on using this new platform for extending the
+publically shared EFS environment, so the new platform names need to
+be agreed upon by the EFS Engineering team.
+
+
+
+=cut    

@@ -1,0 +1,222 @@
+
+=head1 EFS Content Porting Guide
+
+This document will walk through the process of rebuilding the EFS
+content, on a new pair (32/64 bit) of platforms.  We refer to this as
+"porting", but really this process just involves compiling a lot of
+existing open source software which has alrady been ported to the
+platform of interest.  We're simply building it into the /efs/dist
+namespace for deployment into EFS.
+
+Before you start this process, you need to have a fully bootstrapped
+and operational EFS domain, which means you need to start out with EFS
+installed and running on one of the existing, supported platforms.
+
+=head1 Installing the EFS Client
+
+The first thing you have to do is get the EFS client installed on the
+new platforms.  We're assuming this has already been ported.
+
+=head2 Debian, Ubuntu
+
+Both Debian and Ubuntu use the same packaging format.  To create the
+*.deb files for the efsclient and efsserver, simply do the following:
+
+    cd /path/to/efs-core/source/packages/ubuntu
+    make
+
+This will create the two packages in:
+
+    ../../blib/packages/ubuntu/efs(client|server)-$release.deb
+
+Install the client package:
+
+    dpkg -i ../../blib/packages/ubuntu/efsclient-$release.deb
+
+Configure the /etc/efs/client.conf for your EFS domain, and start the
+client.  The client.conf file can simply be copied from an existing
+client.  If you have installed the "sysvconfig" package:
+
+    service efsclient start
+
+If not, then:
+
+    /etc/init.d/efsclient start
+
+=head1 Building efs/core/bootstrap
+
+=head2 Building the perl5 core and CPAN modules
+
+The first thing that has to be done is to install perl and the CPAN
+modules required by EFS, into the efs/core/bootstrap directory
+structure.  This is automated by the efs_bootstrap_install script.
+
+First you will need to create the install directories in
+efs/core/bootstrap for the new platform.  Run the following pair of
+commands on an existing EFS client:
+
+    efs create release efs core bootstrap # If not already present
+    efs create install efs core bootstrap x86-64.debian.5.0
+    efs create install efs core bootstrap x86-32.debian.5.0
+
+The efs_bootstrap_install utility requires the bootstrap.conf file
+that was used to build the initial domain.  See the documentation on
+bootstrapping the initial domain for details on the file format and
+contents.  By default, this file is found in /etc/efs/bootstrap.conf.
+
+As the efsops user:
+
+    cd /path/to/efs-core/source
+    ./util/efs_bootstrap_install --perl=source
+
+This should build the core perl and CPAN modules into
+/efs/dist/efs/core/bootstrap/.exec/$platform.  There are several
+modules which require 3rd party libraries, and you may need to install
+the missing dependencies in order to get them all compiled.  In
+particular, the following modules may be problematic:
+
+    DBD::mysql
+    Authen::PAM
+    # XXX: what else?
+
+This must be done on both the 64 and 32 bit clients for the new
+platform.  This will also install efs-core as well.
+
+=head2 Installing efs-deploy 
+
+Once you have installed perl, the CPAN dependencies, and efs-core,
+there is one other essential package that must be installed as well:
+efs-deploy, which will be used to build the content into /efs/dist
+properly.
+
+This is also done using the efs_bootstrap_install utility:
+
+   cd /path/to/efs-deploy
+   /path/to/efs-core/source/util/efs_bootstrap_install --skip=perl --perl=source 
+
+Once this is done, then you need to get the compilers bootstrapped.
+
+=head2 Configuring efsdeploy
+
+Before you can use efsdeploy you need to create site specific
+configuration for efsdeploy.  This is done as follows:
+
+    efs create project efs deploy-config
+    efs create release efs deploy-config 1.0
+    cd /efs/dev/efs/deploy-config/1.0/src
+    mkdir -p etc/common
+
+There's a very simple GNUmakefile you can copy into the src tree to
+use to manage the 3 required files.
+
+    cp /path/to/efs-deploy/etc/GNUmakefile
+
+There are 3 files you will need to manage in this project, pathnames
+here are relative to the src tree:
+
+    etc/common/compilers.conf
+    etc/common/globals.conf
+    etc/common/platforms.conf
+
+There are 3 files you can use as templates in the same directory as
+the GNUmakefile.  These files are also documented in the efsdeploy man
+pages.  The primary thing you have to localize to each EFS domain are
+the compile server hostnames in platforms.conf.
+
+=head1 Bootstrapping the Compilers
+
+The very first thing we have to build into EFS is the GNU compiler
+suite, and then the EFS perl ecosystem.
+
+=head2 Bootstrapping GCC
+
+There are 4 key projects that have to be rebuilt in order to bootstrap
+the GCC environment in EFS for a new platform:
+
+    gnu/binutils
+    gnu/gcc
+    gnu/gmp
+    gnu/mprf
+
+We are assuming in this document that you are simply rebuilding the
+latest releases that EFS team has made available, and not upgrading
+any of the versions.  If an upgrade is necessary, then this process is
+similar, but not always straight forward, if the same build scripts
+that worked for the existing releases need to be modified for the
+newer ones.
+
+In this document, we're using the release pathnames and versions used
+to bootstrap Debian 5.0 for the first time, as an example.
+
+=head3 gnu/binutils, gnu/gmp, gnu/mpfr, and gnu/gcc
+
+Start by cloning the latest release, for example:
+
+    efs clone release gnu bintuils 2.20.1-build002 2.20.1-build001 --build --src
+
+The --build and --src arguments are critical.  We will NOT be
+rebuilding the existing platforms, just the new ones, and by cloning
+the build tree, we carry forward the efsdeploy.state and the log files
+for the existing builds.
+
+Build the new release by simply doing:
+
+    cd /efs/dev/gnu/binutils/2.20.1-build002/src
+    efsdeploy source:distalias --platforms x86-32.debian.5.0,x86-64.debian.5.0
+
+Note that we're not using "down:up" here.  You don't need to download,
+since the cloned release includes the source archive, and we're going
+to upload all of this when we're done with it.  There will be
+intermediate builds, since we want to recompile the entire compiler
+suite with itself when we're done, as a real world test, and then
+upload that.
+
+Several things can go wrong here, unfortunately.  If the release that
+you cloned was a clean build, then the existing platforms should NOT
+be rebuilt and reinstalled.  That's the whole point of using the
+cloning mechanism, and starting with the efsdeploy.state file for the
+previous build.  By using the --platforms arguments, you can ensure
+that the existing platforms will be skipped.
+
+=head3 gnu/gcclib
+
+The gnu/gcclib release is a little special.  This one is cloned like
+any other release, but is not compiled.  This is "built" my rsyncing
+the libraries from gnu/gcc, and you actually start the install process
+from the "install" step:
+
+    cd /efs/dev/gnu/gcclib/4.4.4-build003/src
+    efsdeploy install:distalias --force --platforms x86-32.debian.5.0,x86-64.debian.5.0
+
+It will require some changes to efsdeploy to support a mechanism for
+skipping steps in the process in order to make this step less
+confusing.
+
+=head3 Second Pass
+
+Once you have build the entire suite the first time, using
+/usr/bin/gcc, you need to build the entire thing again, but this time
+the builds will use the EFS-based compilers that you built in the
+first pass.
+
+Clone each of the previous builds, in the same project order, and
+rebuild them again.  This time, you must use --force (since the
+efsdeploy state will be "pass"), and that means you MUST use the
+--platforms options, or you will be rebuilding everything.
+
+=head2 Bootstrapping Perl
+
+Now that you have some C compilers in EFS, you can build the perl
+compilers.  This is essentiall the smae process as above.
+
+    efs clone release perl5 core 5.10.1-1.001-buildXXX 5.10.1-1.001-buildYYY --build --src
+
+Where XXX is YYY+1, and YYY is the most recent build.  Then:
+
+    cd /efs/dev/perl5/core/5.10.1-1.001-buildXXX/src
+    efsdeploy source:distalias --platforms x86-32.debian.5.0,x86-64.debian.5.0
+
+Once this is complete, repeat the process for the latest perl5.12
+release as well.
+
+=cut    
