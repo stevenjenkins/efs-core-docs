@@ -16,6 +16,73 @@ if you are planning on using this new platform for extending the
 publically shared EFS environment, so the new platform names need to
 be agreed upon by the EFS Engineering team.
 
+=head2 sql/platform.conf, sql/instance.conf, etc.
 
+The "canonical" definitions for the EFS 3 platform and instance
+namespace is effectively managed in 4 configuration files in the sql/
+subdirectory of the efs-core source tree.  To make something official,
+and a supported part of the EFS 3 naming conventions, it should be
+managed here.
+
+=head1 Porting the EFS Client Software
+
+=head2 efs_platform
+
+This is the first script that must be ported to the new platform.
+This is a /usr/bin/perl script, and it needs to be modified with an
+extreme minimalist approach, to avoid introducing dependencies on any
+unnecessary modules, or on recent perl core features (sorry, you may
+not use 5.10 tweaks until the last /usr/bin/perl based on 5.8 drops
+out of support).
+
+=head2 efs_configure_autofs, efs_configure_amd
+
+This is the second script you have to port to a new platform, in order
+to access the /efs/dev namespace.  Both autofs and amd are supported,
+and we recommend using which ever mechanism is "native" to the
+operating system.
+
+=head2 efsclient package
+
+The next step is to port the efsclient rc script and the efsclient
+package, to the operating systems native packaging format.  This can
+be fun.
+
+There are few guidelines here, and the best approach is to study how
+the existing RPM and Debian/Ubuntu packages have been automated.  The
+goal is to produce a GNUmakefile in:
+
+    .../packages/$os/GNUmakefile
+
+that auto-generates the efsclient and/or efsserver packages for the
+native OS.
+
+Note that even without a fully integrated client package, you should
+still be able to run the efsclient boot script manually, as long as
+you have a valid /etc/efs/client.conf.  
+
+The efsclient package must minimally install both of:
+
+    /usr/bin/efs_platform
+    /usr/bin/efs_configure_(autofs|amd)
+
+as well as install the efsclient boot script into the appropriate
+system directories.  The man pages for both of the scripts should be
+included, if possible.
+
+=head2 efsserver package
+
+If you have figured out how to build the efsclient package, then you
+should also automate building the efsserver package as well.  This is
+a far simpler package, since it only has to install the efsserver boot
+script, and nothing more.  Reminder: the EFS server, efsd, is designed
+to run on top of the EFS client, without any locally installed
+software at all.
+
+=head1 Now what?
+
+Once you have all of the above components working, then you need to
+begin building the EFS dependencies, which is documented in the
+Content Porting Guide.  Links would be nice....
 
 =cut    
