@@ -134,7 +134,33 @@ In this example, the resulting hostname will be barefsd01.
 
 =head3 Configuring compile servers
 
+The primary EFS server can also double as a compile server for
+whatever platform it is.  Assuming you use a 64 bit platform for your
+EFS server, you will at least need 32 bit compile server for the same
+OS.
 
+The convention the EFS team is using is to create odd/even compile
+server pairs for the 32 and 64 bit platforms for a given OS.  For example:
+
+    Hostname          Platform
+    --------          --------
+    barcomp01         x86-32.rhel.5
+    barcomp02         x86-64.rhel.5
+    barcomp03         x86-32.debian.5.0
+    barcomp04         x86-64.debian.5.0
+    barcomp05         x86-32.ubuntu.9.10
+    barcomp06         x86-64.ubuntu.9.10
+    barcomp07         x86-32.freebsd.8.0
+    barcomp08         x86-64.freebsd.8.0
+
+Each machine is configured by creating a bare, vanilla installation of
+the desired platform, and then running:
+
+    efs_virtual_machine d.bar.baz.reg.boot.efs compXX
+
+The mapping from hostname to platform is managed in the efsdeploy
+platforms.conf file.  See the efsdeploy documentation, or the Content
+Porting Guide for more information.
 
 =head2 Compiling and Updating the usr-efs tarballs
 

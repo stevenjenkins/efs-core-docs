@@ -219,4 +219,66 @@ Where XXX is YYY+1, and YYY is the most recent build.  Then:
 Once this is complete, repeat the process for the latest perl5.12
 release as well.
 
+=head2 Porting dependency trees with efsdeploy_rebuild_tree
+
+By now, the basic mechanism used to extend platform support for a
+given release to a new pair of platforms should be fairly clear.  You
+clone an existing release, and rebuild it for just the new platforms.
+
+=head3 efs/core, efs/deploy
+
+Now that you have the compilers available for the new platforms, you
+need to port the latest efs/core and efs/deploy releases.  This is
+done as follows:
+
+    cd /efs/dev/efs/core/$latest-release/src
+    efsdeploy_rebuild_tree
+
+If you're really, really lucky, this will Just Work.  In reality, it
+is entirely likely that as the script walks the dependency tree,
+cloning and rebuilding things, something will fail to compile cleanly
+on the new platforms.
+
+This is the fun part.  You need to resolve each issue, complete the
+build of the given dependency, and then re-run the
+efsdeploy_rebuild_tree script, which will pick up where it left off.
+
+Repeat this process for efs/deploy, and then you have reached a key
+milestone for bootstrapping the new platforms.
+
+=head3 Destroy efs/core/bootstrap
+
+You should be able to get rid of efs/core/bootstrap, and use the new
+efs/core and efs/deploy releases to complete the rest of the
+bootstrapping process.
+
+    efs setstage release efs core bootstrap rejected
+    efs destroy  release efs core bootstrap
+
+Don't purge it until you're satisfied that the new efs/core and
+efs/deploy releases work correctly.
+
+Now, use caution here.  If you are working on another platform in
+parallel, destroying the bootstrap release will yank the rug out from
+under that effort.  If you can't destroy the release, then simply move
+everything out of the way:
+
+    cd /efs/dev/efs/core/bootstrap/install/.exec/$platform
+    mkdir .destroyed
+    mv * .destroyed
+
+Crude, but effective.
+
+=head3 Porting everything else built with efsdeploy
+
+Any existing EFS release which was cleanly built with efsdeploy can be
+rebuilt using the same mechanism described above.  In theory, one
+command will do all the work, but in reality, the hard part is dealing
+with the individual failures along the way.
+
+Just because we got everything to build clean on one Linux
+distribution does not mean it will all build, and most importantly
+test, clean on another one.  However, the entire process is at least
+entirely metadata-driven by a single command.
+
 =cut    
