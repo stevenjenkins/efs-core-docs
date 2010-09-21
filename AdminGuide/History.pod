@@ -20,7 +20,7 @@ scalability, and that is available as an open source product.
 
 Like most large software products, EFS was not conceived or
 implemented in a vacuum, and it owes a lot to the learning experiences
-of the code that preceeded it.  This document seeks to explain both
+of the code that preceded it.  This document seeks to explain both
 the problem space that EFS provides a solution for, and the history of
 the software that came before it.
 
@@ -54,7 +54,7 @@ Enterprise, for example:
 
 In most enterprises, software distribution for each type of software
 is managed very differently, and the concept of a single system which
-can address all of these is rarely attemped.   
+can address all of these is rarely attempted.   
 
 EFS is the result of over 20 years experience working on solutions to
 the problem of software deployment, and more importantly software
@@ -88,12 +88,12 @@ will scale far better than managing an instance per client/node.
 
 Let's forget about the grey area of the operating system for now.
 Let's focus on the installation of optional software, such as third
-party vendor APIs, and internally developed software that noone but
+party vendor APIs, and internally developed software that no one but
 you owns.
 
 In the early days, sys admins used to segregate optional operating
 system software into /usr/local on each machine.  Proprietary software
-was often managed is completely customized directory structures with
+was often managed in completely customized directory structures with
 non-standard names, like /apps, or /mystuff.  By using different
 directory namespaces, you at least separate things from the operating
 system itself.
@@ -129,7 +129,7 @@ install files into /usr/local/bin, /usr/local/lib and other generic,
 shared directories.  As the number of products managed grows, change
 becomes increasingly difficult, since there's no generic mechanism for
 versioning things.  The use of shared directories means that
-whenmaking changes for one product, it's fairly easy to accidentally
+when making changes for one product, it's fairly easy to accidentally
 impact the existing installations of unrelated products.
 
 Let's summarize the problems with the traditional /usr/local over NFS
@@ -150,8 +150,8 @@ the risk of affecting the installation of something totally unrelated.
 If you want to install a new version of a product, it normally
 overwrites the previous installation.  This makes it very risky to
 upgrade products, since the upgrade is immediate.  Running two
-versions of the same product is next to impossible, without a
-significant amount of per-product engineering.
+versions of the same product ranges from difficult to impossible,
+without a significant amount of per-product engineering.
 
 =item Client Diversity
 
@@ -159,7 +159,7 @@ If you have to support N different platforms, most sites end up with N
 different copies of /usr/local, one for each distinct platform.
 Keeping software in sync across multiple platforms is then much more
 difficult. This results in per-platform deployment, and increased
-heterogeniety in your environment.  
+heterogeneity in your environment.  
 
 =item Fileserver Synchronization
 
@@ -275,7 +275,7 @@ where:
 =item metaproj
 
 A metaproj, or "meta-project", is the name given the container that
-groups project.  It is a single directory in the $root of the
+groups projects.  It is a single directory in the $root of the
 namespace.
 
 =item project
@@ -296,13 +296,13 @@ namespace used to support them has evolved as well.
 =head3 Platform-specific content
 
 It is important to note that the MPR namespace has pretty much been a
-constant in all of the implemenations throughout the history of EFS,
+constant in all of the implementations throughout the history of EFS,
 but the mechanism for managing platform-specific content has changed
 over the years.
 
 The key concept however, is that a single MPR is released as a single
 unit, containing files for multiple platform types as well files which
-can be shared across architectures.  Constrast this with the usual
+can be shared across architectures.  Contrast this with the usual
 approach of maintaining separate filesystems for each platform.  If we
 can implement a system that deploys a single, cross platform release,
 then we can maintain cross-platform consistency far easier.
@@ -316,14 +316,14 @@ EFS owes a lot to the systems that came before it.  The software you
 are now reading about is actually the author's fifth major
 implementation of the core ideas described above.  While all of the
 pre-EFS implementations were effectively proprietary software, the
-systems and the ideas themselves were discussed publically at
+systems and the ideas themselves were discussed publicly at
 technical conferences, and a lot of prior art already exists.
 
 =head2 NIST's /depot concept
 
 In the late 1980s, the author was first introduced to this problem
 space, and like any good sys admin, he looked for existing solutions
-to leverage.  A team of sys admins at NIST (Nationaal Institute for
+to leverage.  A team of sys admins at NIST (National Institute for
 Standards and Technology) collaborated on a system called /depot.
 (NOTE: This has nothing to do with CMU's /depot at all), which was
 first presented at LISA-IV in 1990, and over the years at subsequent
@@ -343,7 +343,7 @@ scripts.  There was no client/server infrastructure, no database to
 manage metadata, just a directory structure that if used carefully,
 could address some (but not all) of the issues raised above.
 
-This initial archtecture was managed by the author for about 3 years,
+This initial architecture was managed by the author for about 3 years,
 and if his memory serves him (a possibly dubious assumption; this was
 20 years ago after all), software was managed across 10-12 distinct
 hardware/software platforms for an environment that included a handful
@@ -355,14 +355,14 @@ considered medium to large scale.
 =head3 Platform specific files in /depot
 
 The mechanism used to manage platform specific files in the /depot
-implementation is worth discussing breifly.  Each release of software
+implementation is worth discussing briefly.  Each release of software
 was managed in a directory such as:
 
     /depot/foo/bar/1.0
 
 This directory had a very rigid structure, because the entire /depot
 namespace was implemented using hierarchical amd maps.  That is,
-/depot was a single amd map, /depot/foo refered to another amd map,
+/depot was a single amd map, /depot/foo referred to another amd map,
 etc.  These were all generated from scripts that read the top level
 directory structure on the master fileserver (there was only one, from
 which all others were updated).
@@ -398,7 +398,7 @@ more readers are likely to recognize.  While working at Morgan Stanley
 in the 1990's, in the UNIX engineering team, the author was one of the
 principle designers and developers for "Aurora", a global distributed
 platform for managing UNIX, Enterprise-wide.  Aurora started with the
-publication of a paper ar LISA '95, and the relavent portion of that
+publication of a paper at LISA '95, and the relevant portion of that
 paper is the AFS implementation for the global filesystem.
 
 VMS, which stands for Volume Management System, and has absolutely no
@@ -406,13 +406,13 @@ relation to the Digital Equipment operating system of the same
 acronym, is the software infrastructure developed to manage AFS.  VMS
 was designed to address more than just the software distribution
 problem space, but also supported global user home directories, and a
-simple but effective generic readwrite namespace for application data.
+simple but effective generic read write namespace for application data.
 
 [[ Need URLs for references ]]
 
 We will only be discussing the subset of VMS that eventually was
 reimplemented as EFS, and it is worth noting that users of VMS will
-find learning EFS to be exteremely easy, since the directory structure
+find learning EFS to be extremely easy, since the directory structure
 of the namespace, and the command line interface of the management
 software differs in minor ways.  The backend implementation, however,
 is completely different.
@@ -420,18 +420,18 @@ is completely different.
 Starting in 1995, MS's UNIX engineering team began deploying the
 Aurora infrastructure by making AFS/VMS available globally, in each
 and every data center.  By 2000, 99% of the applications and their
-supporting infrastructure, as well even the client operating system,
-were deployed exclusively via AFS/VMS.  In fact, when the author left
-MS in 2005, AFS/VMS was still the primary mechanism for deploying
-applications on Aurora clients.
+supporting infrastructure, as well as even the client operating
+system, were deployed exclusively via AFS/VMS.  In fact, when the
+author left MS in 2005, AFS/VMS was still the primary mechanism for
+deploying applications on Aurora clients.
 
-VMS acheived such total success, and such extreme scalability, largely
+VMS achieved such total success, and such extreme scalability, largely
 due to some of the unique features of AFS.  In particular, AFS'
 support for transparent failover between identical readonly copies of
 data protected the production environment from the failure of an
 individual fileserver.  AFS's volume management functionality made the
-management of an individual cell incredibly, allowing for online data
-management.
+management of an individual cell incredibly scalable, allowing for
+online data management.
 
 VMS, for all of it's success, was still a highly customized
 proprietary implementation of the namespace.  For example, the root
@@ -460,7 +460,7 @@ designed to support several types of data.
 A mechanism for creating arbitrary directory structures to make
 readwrite space available in AFS was implemented in /ms/group, which
 was somewhat unmanaged, and which had it's own problems over time.
-Since this partion of the namespace wasn't implmented in EFS, it won't
+Since this portion of the namespace wasn't implemented in EFS, it won't
 be discussed here further.
 
 =item /ms/user
@@ -477,7 +477,7 @@ globally, and this implementation heavily leveraged the generally
 excellent WAN performance of the AFS client side cache.
 
 EFS may very well include support for user home directories in a
-similar namespace in a future release, but support for the freeform
+similar namespace in a future release, but support for the free form
 group structure isn't in the plans at all.
 
 =item /ms/dev/$metaproj/$project/$release
@@ -491,7 +491,7 @@ The /ms/dev/$metaproj directory was just a container for the various
 projects it included, and each distinct project would be located in
 one of the AFS/VMS cells somewhere in the world.  This unified
 namespace made them all available, globally, and transparently.  Aside
-from WAN latencies, in principle, if permissioned to do so, developers
+from WAN latencies, in principle, if permission-ed to do so, developers
 could "see" these project directories from anywhere in the world.
 
 =item /ms/dist/$metaproj/PROJ/$project/$release
@@ -499,7 +499,7 @@ could "see" these project directories from anywhere in the world.
 The "dist" namespace is where software is distributed and replicated.
 When you are looking at a real file in /ms/dev, /ms/user or /ms/group,
 you're looking at the same file, same inode, on the same fileserver,
-from anywhere in the world.  In constrast, the contents of /ms/dist
+from anywhere in the world.  In contrast, the contents of /ms/dist
 were always sourced from a copy of the data that had been distributed
 to the local cell in each data center.
 
@@ -524,7 +524,7 @@ that the release supports.
 
 The "exec" symlink is what leverages one of the most powerful features
 of the AFS client: the @sys expansion.  When a given client evaluates
-the exec symlink, and the "@sys" value is replaced with a string which
+the exec symlink, the "@sys" value is replaced with a string which
 represents the platform of the client.  On a Linux/Intel machine, the
 @sys value might be "x86-64.linux.2.6", but on a Solaris/Sparc machine
 is might be "sparc64.sunos.10".
@@ -598,7 +598,7 @@ The simple fact was that the installed base of perl applications,
 scripts, and utilities was so large that with each upgrade, something
 somewhere would break catastrophically.
 
-Backwards compatibility is something you rarely acheive with 100%
+Backwards compatibility is something you rarely achieve with 100%
 certainty, and while perl has been far better than most software
 products in this regard, it isn't perfect.  In EFS, we decided to
 abandon the metaproj defaults entirely, so the PROJ directory was
@@ -609,7 +609,7 @@ seeming simplicity of using any kind of defaults heavily.
 
 This is the single most significant difference between VMS and EFS.
 VMS was designed from day one on top of a very well engineered, and
-very agressively automated AFS cell infrastructure.  EFS is
+very aggressively automated AFS cell infrastructure.  EFS is
 implemented on top of NFSv3.
 
 AFS is to NFSv3 what an inter-galactic multi-dimensional time machine
@@ -660,7 +660,7 @@ using it.
 Starting in early 2009, the EFS team switched it's development effort
 to creating EFS 3, a release of EFS which can be run in any arbitrary
 domain.  This involved a lot of code modernization and
-standardization, the remediation of a fair amount of propietary code,
+standardization, the remediation of a fair amount of proprietary code,
 and most importantly, it required us to develop tools to bootstrap a
 new EFS environment.
 
@@ -673,19 +673,19 @@ Now that we have a generally available release, it remains to be seen
 how quickly the community around the product will grow.  Over the
 years, the author has received many, many requests from ex-users of
 VMS, asking if/when it will be available as an open source product,
-which leads us to beleive that there is a latent demand for the
+which leads us to believe that there is a latent demand for the
 product.
 
 EFS allows system administrators to radically change the way they
 manage clients platforms (dataless clients are far easier when you
-don't need the software locally), as well as software distrubution and
+don't need the software locally), as well as software distribution and
 deployment.
 
 EFS allows application teams to take complete control over the
 deployment process for their applications, and provides unprecedented
 tools for change control automation.
 
-NFSv3 is the weakest part of the EFS infrastucture, and we intend to
+NFSv3 is the weakest part of the EFS infrastructure, and we intend to
 add support for NFSv4, and perhaps AFS, in the future (access to the
 necessary resources permitting.  hint hint hint...).
 
