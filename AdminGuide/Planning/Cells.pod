@@ -61,16 +61,16 @@ geographic continent names:
     af      Africa
     as      Asia
     au      Australia
-    an      Antartica
+    an      Antarctica
 
 Another example might be top level organizational names, for example,
-the region conventions used at the origianl EFS developer's employer
+the region conventions used at the original EFS developer's employer
 are:
 
     Region  Description
     ------  -----------
     amrs    Americas
-    emea    Europe, Middle East, Africe
+    emea    Europe, Middle East, Africa
     aja     Asia, Japan, Australia[*]
 
 Choose these names carefully, as they will be very difficult to change.
