@@ -219,7 +219,7 @@ Where XXX is YYY+1, and YYY is the most recent build.  Then:
 Once this is complete, repeat the process for the latest perl5.12
 release as well.
 
-=head2 Porting dependency trees with efsdeploy_rebuild_tree
+=head1 Porting dependency trees with efsdeploy_rebuild_tree
 
 By now, the basic mechanism used to extend platform support for a
 given release to a new pair of platforms should be fairly clear.  You

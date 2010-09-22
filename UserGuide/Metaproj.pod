@@ -1,0 +1,10 @@
+
+=head1 Managing EFS Metaprojs
+
+=head1 Creating a metaproj
+
+=head1 Managing metaproj access and permissions
+
+=head1 Destroying a metaproj
+
+=cut
