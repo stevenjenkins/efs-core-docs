@@ -174,4 +174,69 @@ namespace in DNS can be made optional.
 
 See the EFS client documentation for more information.
 
+=head1 Server Infrastructure
+
+=head2 NFS Servers
+
+Each EFS cell requires a single NFS server dedicated for that cell.
+The NFS server can be used to server non-EFS data, on volumes other
+than those required by EFS, but each NFS server must be defined for
+one, and only one EFS cell.  You will need one at least one NFS server
+for each distinct EFS cell you want to deploy.
+
+EFS will only be as stable as the NFS infrastructure on top of which
+it is deployed, so these NFS servers should be configured using some
+kind of clustering technology, should be backed up, etc. etc.  EFS
+does B<NOT> manage the NFS servers themselves, rather it manages the
+content of the data served via the EFS volumes on those servers.
+
+In the future, we would like to extend EFS to manage as much of the
+NFS server configuration as possible, but the current implementation
+has no such support.
+
+=head2 EFS Servers
+
+Each EFS cell will require a minimum of one EFS server on which the
+EFS management software (efsd) will run.  Each EFS server can manage
+multiple cells, and we recommend using at least four (4) EFS servers
+to manage your cells.  Two of these will have a hosttype of "prod",
+will run the prod release of efs/core, and two will have a hosttype of
+"dev", and run the development release of efs/core.  See the "Managing
+EFS Servers" documentation in the Admin Guide for more details.
+
+In theory, you can use any supported EFS client platform, but the
+majority of our development and testing has been on CentOS 5.4, on
+x86_64.
+
+We recommend restricting access to these machines, since they will
+have full root access to the EFS volumes on your NFS servers, and if
+root on these hosts is compromised, then the integrity of the contents
+of EFS have been compromised.
+
+The EFS server (efsd) does not consume a tremendous amount of
+resources, since it is idle except when users are running efs client
+commands.  The number of servers you need, and the capacity of these
+servers (with respect to CPU and Memory, not disk space) depends on
+the scale of your environment, and the frequency with which you expect
+to update and distribute software.
+
+=head3 Properly Defined Hostnames and Addresses
+
+EFS security requires the use of SSL for server-server authentication
+and client-server privacy, and this will only work if the EFS server's
+hostnames and IP addresses are correctly defined in your naming
+services.  The most common use-case is DNS, and that means that the
+hostname used to refer to the server must map to one of it's valid IP
+addresses, and more importantly, that the IP addresses used by the
+server resolve to the host's fully qualified, canonical hostname.
+
+If you are stuck in the 1980's, and not using DNS, then you can still
+satisfy this requirement using /etc/hosts, or NIS, or any other
+alternate mechanism, provided the names map to the correct addresses,
+and the addresses map to the correct name.
+
+Consult with the EFS Development team if you are having trouble
+satisfying this basic requirement, and we may be able to recommend
+domain-specific workarounds.
+
 =cut    

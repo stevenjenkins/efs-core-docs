@@ -4,7 +4,7 @@
 This document will walk through the process of rebuilding the EFS
 content, on a new pair (32/64 bit) of platforms.  We refer to this as
 "porting", but really this process just involves compiling a lot of
-existing open source software which has alrady been ported to the
+existing open source software which has already been ported to the
 platform of interest.  We're simply building it into the /efs/dist
 namespace for deployment into EFS.
 
@@ -152,7 +152,7 @@ to bootstrap Debian 5.0 for the first time, as an example.
 
 Start by cloning the latest release, for example:
 
-    efs clone release gnu bintuils 2.20.1-build002 2.20.1-build001 --build --src
+    efs clone release gnu binutils 2.20.1-build002 2.20.1-build001 --build --src
 
 The --build and --src arguments are critical.  We will NOT be
 rebuilding the existing platforms, just the new ones, and by cloning
@@ -181,7 +181,7 @@ that the existing platforms will be skipped.
 =head3 gnu/gcclib
 
 The gnu/gcclib release is a little special.  This one is cloned like
-any other release, but is not compiled.  This is "built" my rsyncing
+any other release, but is not compiled.  This is "built" by rsyncing
 the libraries from gnu/gcc, and you actually start the install process
 from the "install" step:
 
@@ -207,7 +207,7 @@ efsdeploy state will be "pass"), and that means you MUST use the
 =head2 Bootstrapping Perl
 
 Now that you have some C compilers in EFS, you can build the perl
-compilers.  This is essentiall the smae process as above.
+compilers.  This is essentially the same process as above.
 
     efs clone release perl5 core 5.10.1-1.001-buildXXX 5.10.1-1.001-buildYYY --build --src
 
