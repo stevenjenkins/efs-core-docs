@@ -192,7 +192,58 @@ content of the data served via the EFS volumes on those servers.
 
 In the future, we would like to extend EFS to manage as much of the
 NFS server configuration as possible, but the current implementation
-has no such support.
+has no such support.  As we work to extend EFS to support both NFSv4
+and OpenAFS, we hope to add more direct support for managing the
+backend fileserver infrastructure, not just the content, as we do
+today.
+
+=head3 Scale Out Strategies for NFS
+
+An EFS cell is built on top of a single NFS server, and the EFS
+software manages content for that cell (either in /efs/dev or
+/efs/dist) by managing the contents of that one fileserver.  While
+modern NAS filers can support large numbers of NFS clients, NFS
+doesn't scale infinitely, and yet we're still recommending one dev,
+and/or one prod cell per data center.
+
+How do we make this work?  EFS 3 still has no support for multiple NFS
+servers in a single cell, so how do you manage a large number of
+clients in a large corporate data center?  The NFS server design for
+the propietary EFS 2 environment can serve as a model for NFS scale
+out.
+
+Each EFS cell is defined with a single NFS server, and when EFS
+manages content, it does so by managing the contents of the EFS
+volumes on that one fileserver.  In EFS 2, these servers are all
+NetApp NAS filers, and we are heavily leveraging their FlexCache
+technology to manage the client/server ratio in the larger data
+centers.
+
+For example, a typical installation will actually be one "read-write"
+NAS filer, which hosts the writable volumes.  This is the NAS filer
+defined in the EFS database for the cell.  That data center will also
+have several additional NAS filers, each of which also server the
+/efs/dist volume, but on thee filers, that volume is defined as a
+FlexCache for the original, read-write volume for /efs/dist.
+
+When EFS updates the read-write volume, on just the one NAS filer, the
+updates are transparently made available on the other NAS filers, so
+effectively, this provides an automated "intra-cell" distribution
+mechanism.  Clients are then balanced across the various NAS filers,
+all of which have the same, identical set of data in /efs/dist, using
+DNS round robin CNAME records, or in some cases (sadly) manually
+configuring the clients.
+
+None of this is automated by EFS, since management of the NAS filers
+is outside the scope of responsibility for the EFS team.
+Strategically, we hope to work with the community of sites that have
+adopted EFS to decide how to best extend EFS to support this backend
+infrastructure, so that we can bring the same degree of scalability to
+the NFS servers as EFS provides for content management.
+
+There are several directions the code can take, and we are very
+interested in pursuing NFSv4 and OpenAFS, and extending EFS to manage
+far more of the underlying infrastructure than it does today.
 
 =head2 EFS Servers
 
