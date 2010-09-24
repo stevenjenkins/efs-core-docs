@@ -145,7 +145,7 @@ The fixed prefix is already using up 9 characters (efs.dist.), leaving
 us with 13 characters to play with.  The longer the metaproj name, the
 shorter the index, and we want to leabve plenty of room for the index
 to grow.  Over 15 years of using AFS/VMS with a similar architecture,
-the volume index has grown to.... (XXX: ask someone at MS -- I think
+the volume index has grown to.... (XXX: ask someone at MS -- we think
 it's 7 digits now).  That would mean 17 characters are used by the
 prefix and suffix, and leave us with 5 characters for the metaproj
 tag.
@@ -189,8 +189,6 @@ Either implementation is possible, but per-domain would be much
 simpler to implement, and it will make problem resolution a bit
 simpler, when the volume names are consistent within a single domain.
 
-=head2 O
-
 =head1 Managing OpenAFS
 
 In the NFS-based EFS cells, the coupling bewteen EFS and NFS is very
@@ -226,53 +224,10 @@ assume the proposed volume name and mount point structure discussed
 above, then the EFS software will need to be able to create and
 replicate volumes.
 
-=head1 EFS Extensions
-
-In this section, I'll discuss the specific things we need to change in
-the EFS design to make adding NFSv4 and OpenAFS support feasible.
-
-=head2 Cell Types
-
-We will need a new colume in the "cell" table to track the filesystem
-type of the cell.  I am proposing that each distinct cell be defined
-as either "nfs" or "afs", since the differences between NFSv3 and
-NFSv4 are relatively small, I think v3 vs v4 can be managed as
-attributes of the individual fileshares, and that will make upgrading
-an "nfs cell" from v3 to v4 easier and simpler.
-
-There is already a "celltype" column for cells (dev or prod), so I
-propose the new column be named "fstype", and have values of "nfs" or
-"afs" (NOTE: if we need, for political reasons to use "openafs" here,
-then fine -- not worth fighting over, but I like short and sweet
-keywords).
-
-=head2 Fileservers and Fileshares
-
-Long term, I want to take over the world, and extend EFS to support
-the complete lifecycle of a cell from the beginning through the end of
-it's life, but initially we have to assume that we're working with
-existing cells, and that EFS is responsible for a subset of it.
-
-Today, a cell is assumed to have one fileserver, in the NFS case.
-That doesn't need to change (although it's possible we'll do so and
-support multiple NFS servers anyway, but that's a separate issue).
-For an OpenAFS cell, you would simply define the fileservers and
-fileshares that you want EFS to use for creating and replicating
-volumes.  For example, for a cell names "d.foo":
-
-    efs define fileserver d.foo fooafs1.example.com
-    efs define fileshare  d.foo fooafs1.example.com /vicepa
-    efs define fileshare  d.foo fooafs1.example.com /vicepb
-    efs define fileshare  d.foo fooafs1.example.com /vicepc
-
-You might have lots of other vice partitions on that server, but EFS
-will only use the ones you have told it about, and ignore everything
-else.
-
 =head3 Number of readonly replicas
 
 First of all, EFS will always create the first readonly replica as a
-clone of the readwrite volume, something that I would hope in 2010 is
+clone of the readwrite volume, something that we would hope in 2010 is
 an obvious optimization.
 
 The number of readonly replicas created for each volume should default
@@ -320,13 +275,56 @@ EFS cells and EFS servers, then we'll need to be able to access
 readwrite volumes in cells other than the one users for each EFS
 server's /afscache.
 
+=head1 EFS Extensions
+
+In this section, I'll discuss the specific things we need to change in
+the EFS design to make adding NFSv4 and OpenAFS support feasible.
+
+=head2 Cell Types
+
+We will need a new colume in the "cell" table to track the filesystem
+type of the cell.  We are proposing that each distinct cell be defined
+as either "nfs" or "afs", since the differences between NFSv3 and
+NFSv4 are relatively small, we think v3 vs v4 can be managed as
+attributes of the individual fileshares, and that will make upgrading
+an "nfs cell" from v3 to v4 easier and simpler.
+
+There is already a "celltype" column for cells (dev or prod), so I
+propose the new column be named "fstype", and have values of "nfs" or
+"afs" (NOTE: if we need, for political reasons to use "openafs" here,
+then fine -- not worth fighting over, but we like short and sweet
+keywords).
+
+=head2 Fileservers and Fileshares
+
+Long term, we want to take over the world, and extend EFS to support
+the complete lifecycle of a cell from the beginning through the end of
+it's life, but initially we have to assume that we're working with
+existing cells, and that EFS is responsible for a subset of it.
+
+Today, a cell is assumed to have one fileserver, in the NFS case.
+That doesn't need to change (although it's possible we'll do so and
+support multiple NFS servers anyway, but that's a separate issue).
+For an OpenAFS cell, you would simply define the fileservers and
+fileshares that you want EFS to use for creating and replicating
+volumes.  For example, for a cell names "d.foo":
+
+    efs define fileserver d.foo fooafs1.example.com
+    efs define fileshare  d.foo fooafs1.example.com /vicepa
+    efs define fileshare  d.foo fooafs1.example.com /vicepb
+    efs define fileshare  d.foo fooafs1.example.com /vicepc
+
+You might have lots of other vice partitions on that server, but EFS
+will only use the ones you have told it about, and ignore everything
+else.
+
 =head2 Fileqtrees
 
 This concept is an anachronism, and results form the fact that EFS 1
 was implemented on top of NetApp NAS Filers, and we were required to
 create a qtree in each volume.  In B<ALL> cases, these are a single
 directory named "efs_qtree", as a convention.  While we need to
-address the use of this object in the NFS cases, I think we can simply
+address the use of this object in the NFS cases, we think we can simply
 ignore them for AFS cells.  Just don't define them, and even if you
 did, the code's not going to pay any attention to them.
 
@@ -334,21 +332,21 @@ did, the code's not going to pay any attention to them.
 
 =head2 AFS::Command and the other AFS::* modules
 
-I was the original author of AFS::Command, and as far as CPAN is
-concerned, I still own it.  The last version I uploaded to CPAN before
-quitting Morgan Stanley was 1.7, however, the engineers at MS have
-continued to upgrade this module, and I beleive they are on version
+Phil was the original author of AFS::Command, and as far as CPAN is
+concerned, he still own it.  The last version uploaded to CPAN before
+he quit Morgan Stanley was 1.7, however, the engineers at MS have
+continued to upgrade this module, and we beleive they are on version
 1.11.
 
-I've warned them that I want my code back, and I will work with them
-to get the latest release posted on CPAN, and I only mention this here
-because this could prove to be a problem for them.  Rumor has it that
-the version they are using is NOT generic enough to be published on
-CPAN, in which case, they will be forced to maintain that as a forked
-version, or clean it up.  
+Phil has warned them that he wants his code back, and we will work
+with them to get the latest release posted on CPAN.  This is only
+mentioned here because this could prove to be a problem for them.
+Rumor has it that the version they are using is NOT generic enough to
+be published on CPAN, in which case, they will be forced to maintain
+that as a forked version, or clean it up.
 
-I will also use the other AFS::* perl modules, where appropriate, and
-I am looking forward to improving how those modules interoperate, and
+We will also use the other AFS::* perl modules, where appropriate, and
+we're looking forward to improving how those modules interoperate, and
 adding more base functionality to AFS::Command.
 
 =head2 rsync
@@ -360,7 +358,7 @@ directory to another, and if an ACL-aware rsync isn't feasible, we'll
 need to use something else.
 
 Note that based on my extensive experience using vos dump/restore as
-the distribution mechanism in AFS/VMS, I want to avoid that approach.
+the distribution mechanism in AFS/VMS, we want to avoid that approach.
 It was a reasonable judgment call back in 1995, but over the years,
 has proven to be a liability and a weakness in the AFS/VMS
 architecture.
@@ -377,5 +375,92 @@ requirement that we continue using the same mechanism for NFSv3, NFSv4
 and OpenAFS, but whatever mechanism are used simply need to be able to
 mirror, with reasonable efficiency, the install contents of a release
 into it's counterpart directory in /efs/dist.
+
+=head1 First Steps
+
+Talk is cheap.  So are documents like this.  What do we actually B<DO>
+to move forward?
+
+=head2 Adding OpenAFS to the test.efs and boot.efs infrastructure
+
+The EFS team does almost all of it's development work on dataless VMs
+that are built and configured automatically (we're all the right kind
+of very lazy).  We will take the same approach and extend the code
+that generates our VM infrastructure to also create an AFS cell as
+well.
+
+Today, the test.efs and boot.efs environments are built out of a
+collection of VMs, one of which is the "coreserver", which provides
+core services, like Kerberos, DNS, NIS, etc.  The idea is to automate
+a test domain, so we simply extend this to build a set of coreservers
+which provide AFS services as well as the existing ones.
+
+Right now, we're able to "compress" all of these core services onto a
+single machine, and the EFS test suite doesn't even use NFS today.  It
+fakes the NFS volumes by creating local directories in /var/tmp, and
+then creates a fake /.efsadmin namespace as a symlink tree.  The test
+suite doesn't even use autofs, since we're not testing NFS and autofs,
+we're testing EFS funcionality.
+
+This works because NFS is transparent EFS, and that won't be true for
+AFS.  EFS can modify a file in NFS using the same semantics as is
+modifies a file in a local filesystem, but this transparency will not
+be possible, since we will need to manipulate real AFS volumes.
+
+The test suite creates and managed three cells: a local dev cell, a
+remote dev cell, and a local prod cell.  For purposes of the test
+suite, we want to keep the number of VMs required to a minimum.  I
+think we can allow each dev cell to be implemented with an AFS cell
+built on a single VM (one host acting as both database and
+fileserver), but in the prod cell we absolutely want to be sure we're
+testing the volume replication code, so a fileserver with two cells is
+essential.  We will not be tested the redundancy of OpenAFS, to we
+don't really need three database servers, as you would in a real world
+implementation.
+
+We can use the coreserver we the OpenAFS server/cell for the local dev
+cell.  We will also need one additional VM for the remote dev cell,
+and two additional VMs for the local prod cell, which will double the
+size of the test.efs setup from 3 to 6 VMs.  Four of these will be
+setup similar to the coreserver, and two will be used to run the
+actual EFS test suite, just as they do in today's setup.
+
+Today, we refer to three machines by their "function":
+
+   core
+   efst01
+   efst02
+
+We will need three new "function" names, for example:
+
+   afsremote
+   afsprod1
+   afsprod2
+
+The "core" machine will be setup as the "afslocal" cell.  The
+"afsremote" machine will be setup as a single-server AFS cell for the
+remove dev cell, and the "afsprod1/2" machines will be the two-server
+AFS cell for the local prod cell.
+
+=head3 Kerberos Realms
+
+This is an area of concern, because the EFS model is to manage
+software distribution for a single, logical and potentially global
+administrative domain.  As discussed near the beginning of this
+document, it is entirely unclear how we will need to map this
+administrative domain to the underlying technologies like Kerberos,
+DNS, etc.
+
+In the AFS/VMS world, we used a single, global Kerberos realm for the
+entire environment, and we put a great deal of engineering into making
+30-40 AFS cells appear to the end user (if not the systems
+administrators) as a single domain, by sharing authentication keys.
+
+We make essentially the same assumption with NFS, as well.  It is an
+impliciit assumption, that we can neither audit, nor enforce, that
+administrators of the EFS NFS servers are only exporting these
+filesystems to clients that are part of a centrally managed uid/gid
+namespace, and that is proving to be a very difficult requirement for
+most large sites to satisfy.
 
 =cut
