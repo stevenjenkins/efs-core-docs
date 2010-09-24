@@ -62,6 +62,50 @@ management infrastructure on day one (although that is the long term
 goal, it will take years), but rather to find a way to bring the
 powerful functionality of EFS to existing users of OpenAFS.
 
+=head3 Kerberos Realms
+
+This is an area of concern, because the EFS model is to manage
+software distribution for a single, logical and potentially global
+administrative domain.  As discussed above, it is entirely unclear how
+we will need to map this administrative domain to the underlying
+technologies like Kerberos, DNS, etc.
+
+In the AFS/VMS world, we used a single, global Kerberos realm for the
+entire environment, and we put a great deal of engineering into making
+30-40 AFS cells appear to the end user (if not the systems
+administrators) as a single domain, by sharing authentication keys.
+
+We will almost certainly not be able to make this a requirement in any
+real world sites, other than Morgan Stanley.  We will need to assume
+that the Kerberos realm might be different for each cell, but allow
+them to be them same, so that we can support both scenarios.
+
+=head3 PTS Databases
+
+There is an assumption that we can simply rsync a directory from one
+EFS to to another, and the permissions on the files and directories
+will be meaningful.  This is only true when all of the cells share a
+common uid/gid namespace.  It is an implicit assumption, that we can
+neither audit, nor enforce, that administrators of the EFS NFS servers
+are only exporting these filesystems to clients that are part of a
+centrally managed uid/gid namespace, and that is proving to be a very
+difficult requirement for most large sites to satisfy.
+
+With OpenAFS, each cell will solve this problem locally, via the PTS
+database, but the bigger issue is inter-cell distribution.  The PTS
+database, and the names and ids, are unique to each AFS cell, and the
+distribution mechanism will need to be aware of this, in one way or
+another.  If we continue to use a simple utility like rsync as the
+distribution mechanism, then even if it is AFS ACL aware, then the
+names on the ACLs have to at least be present in the cell to which
+data is being shipped.
+
+The classic problem of having two numeric user namespaces (UNIX vs
+PTS) can also be an issue, as well.  In the AFS/VMS world, we managed
+the uid/gid namespace centrally and globally, and we developed
+infrastructure to keep the PTS database agressively in sync with the
+central database.
+
 =head1 Changes to /efs
 
 First of all, one of the goals of this project will be to maintain
@@ -441,26 +485,5 @@ The "core" machine will be setup as the "afslocal" cell.  The
 "afsremote" machine will be setup as a single-server AFS cell for the
 remove dev cell, and the "afsprod1/2" machines will be the two-server
 AFS cell for the local prod cell.
-
-=head3 Kerberos Realms
-
-This is an area of concern, because the EFS model is to manage
-software distribution for a single, logical and potentially global
-administrative domain.  As discussed near the beginning of this
-document, it is entirely unclear how we will need to map this
-administrative domain to the underlying technologies like Kerberos,
-DNS, etc.
-
-In the AFS/VMS world, we used a single, global Kerberos realm for the
-entire environment, and we put a great deal of engineering into making
-30-40 AFS cells appear to the end user (if not the systems
-administrators) as a single domain, by sharing authentication keys.
-
-We make essentially the same assumption with NFS, as well.  It is an
-impliciit assumption, that we can neither audit, nor enforce, that
-administrators of the EFS NFS servers are only exporting these
-filesystems to clients that are part of a centrally managed uid/gid
-namespace, and that is proving to be a very difficult requirement for
-most large sites to satisfy.
 
 =cut
