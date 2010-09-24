@@ -36,7 +36,7 @@ be scaled globally as well, but even OpenAFS fails to scale that well.
 It is well known that OpenAFS fileservers can scale almost infinitely,
 but OpenAFS database servers, due to limitations in the Ubik protocol,
 do not.  UNIX naming service technologies, like NIS, NIS+, and LDAP,
-also suffers from similar limitations, and in most real worl
+also suffers from similar limitations, and in most real world
 environments, if you are trying to maintain system integration and
 ease of use and scale globally, it means figuring out how to build a
 global virtual domain by managing a collection of smaller ones.
@@ -44,8 +44,8 @@ global virtual domain by managing a collection of smaller ones.
 In the AFS/VMS environment, we solved this problem by centrally
 managing a collection of independent AFS cells, and via VMS, made them
 appear to the end-users as an integrated environment.  The biggest
-challenge was on the securtity side, and since we were building our
-own Kerberos infrastructrue, we were able to address these issues, but
+challenge was on the security side, and since we were building our
+own Kerberos infrastructure, we were able to address these issues, but
 did so in proprietary ways.  For example, we creating our own tools
 for authentication that transparently converted the user's Kerberos
 credentials from the single, global realm we used, into AFS tokens for
@@ -103,7 +103,7 @@ data is being shipped.
 The classic problem of having two numeric user namespaces (UNIX vs
 PTS) can also be an issue, as well.  In the AFS/VMS world, we managed
 the uid/gid namespace centrally and globally, and we developed
-infrastructure to keep the PTS database agressively in sync with the
+infrastructure to keep the PTS database aggressively in sync with the
 central database.
 
 =head1 Changes to /efs
@@ -123,11 +123,11 @@ volumes on the cell's NFS servers.  In an OpenAFS implementation,
 since we want all of the data to live /afs somewhere, and since we
 want to be able to install EFS and use it in existing OpenAFS cells
 (requiring totally new cell infrastructure would pretty much guarantee
-that noone adopts it), both /efs/dev and /efs/dist can be simple
+that no one adopts it), both /efs/dev and /efs/dist can be simple
 symlinks into the /afs/$localcell directory structure somewhere.
 
 EFS will require a "root" volume, underneath which mount points for
-additonal volumes which make up the namespace will be mounted.  We
+additional volumes which make up the namespace will be mounted.  We
 should be able to make this configurable per-cell, but the
 recommendation will be to add this "root" EFS volumes as high as possible:
 
@@ -163,7 +163,7 @@ mount points, all managed by the EFS software of course.
 
 One of the biggest challenges facing any OpenAFS administrator to this
 day, is the absurdly short limit on volume names of 22 characters.
-This makese it very difficult to represent the pathnames where each
+This makes it very difficult to represent the pathnames where each
 volume is mounted, in fact impossible.
 
 The AFS/VMS implementation solved this problem by using a relational
@@ -187,7 +187,7 @@ the metaproj names and only use the first N characters.
 
 The fixed prefix is already using up 9 characters (efs.dist.), leaving
 us with 13 characters to play with.  The longer the metaproj name, the
-shorter the index, and we want to leabve plenty of room for the index
+shorter the index, and we want to leave plenty of room for the index
 to grow.  Over 15 years of using AFS/VMS with a similar architecture,
 the volume index has grown to.... (XXX: ask someone at MS -- we think
 it's 7 digits now).  That would mean 17 characters are used by the
@@ -202,9 +202,9 @@ the existing conventions used by OpenAFS users of EFS.  It will be
 difficult, but possible, to make the volume naming conventions be
 customizable, per EFS-domain, or perhaps even per-cell.
 
-=head2 Volume Mount Point Heirarchy
+=head2 Volume Mount Point Hierarchy
 
-The namespace can then be implemented in a volume heirarchy as follows.
+The namespace can then be implemented in a volume hierarchy as follows.
 
    Pathname                          Volume Example
    ========                          ==============
@@ -219,6 +219,9 @@ but that was primarily because the distribution mechanism used AFS
 volume level dump/restore, and in EFS we do not plan to use that same
 mechanism, since we want EFS to support multiple backend distributed
 filesystems.
+
+Note that the top level volumes "efs.dist", and "efs.dev" will be
+special, and not have any numeric index.
 
 =head2 Global vs Cell-specific Volume Names
 
@@ -235,7 +238,7 @@ simpler, when the volume names are consistent within a single domain.
 
 =head1 Managing OpenAFS
 
-In the NFS-based EFS cells, the coupling bewteen EFS and NFS is very
+In the NFS-based EFS cells, the coupling between EFS and NFS is very
 weak.  The EFS server software assumes basic UFS filesystem semantics
 for the pathnames it modifies, and the only relationship to NFS is
 really that we access the writable pathnames via autofs maps, and a
@@ -300,7 +303,7 @@ unconventional way.  We basically created a scratch space local to
 each cell for the purpose of temporarily mounting and unmounting
 volumes in order to modify the contents.
 
-In the EFS NFS implementation, we solved the analgous problem with the
+In the EFS NFS implementation, we solved the analogous problem with the
 /.efsadmin autofs namespace.   The structure is:
 
     /.efsadmin/$cell/$fileserver/$fileshare/$fileqtree
@@ -312,7 +315,7 @@ via the /.efsadmin namespace.
 
 EFS has to address this problem in a generic way that can be used in
 existing EFS cells, with minimal disruption.  Furthermore, bear in
-mind that individual EFS servers can support an abitrary number of
+mind that individual EFS servers can support an arbitrary number of
 cells, since they are all made visible via the /.efsadmin namespace.
 If we want to continue supporting a many-to-many relationship between
 EFS cells and EFS servers, then we'll need to be able to access
@@ -326,7 +329,7 @@ the EFS design to make adding NFSv4 and OpenAFS support feasible.
 
 =head2 Cell Types
 
-We will need a new colume in the "cell" table to track the filesystem
+We will need a new volume in the "cell" table to track the filesystem
 type of the cell.  We are proposing that each distinct cell be defined
 as either "nfs" or "afs", since the differences between NFSv3 and
 NFSv4 are relatively small, we think v3 vs v4 can be managed as
@@ -372,6 +375,16 @@ address the use of this object in the NFS cases, we think we can simply
 ignore them for AFS cells.  Just don't define them, and even if you
 did, the code's not going to pay any attention to them.
 
+=head2 Volume Names
+
+Since the dynamically created OpenAFS volumes will be specific to each
+metaproj, project and release, we will need to manage these in the
+database.  How we do so depends on whether or not these names are
+per-domain or per-cell.  If they are per-domain, then the simplest
+extension is to add a column to each table (metaproj, project, and
+release).  If they are per-cell, then we will need new tables and
+classes to manage this data.
+
 =head1 Perl Modules and other Software
 
 =head2 AFS::Command and the other AFS::* modules
@@ -379,7 +392,7 @@ did, the code's not going to pay any attention to them.
 Phil was the original author of AFS::Command, and as far as CPAN is
 concerned, he still own it.  The last version uploaded to CPAN before
 he quit Morgan Stanley was 1.7, however, the engineers at MS have
-continued to upgrade this module, and we beleive they are on version
+continued to upgrade this module, and we believe they are on version
 1.11.
 
 Phil has warned them that he wants his code back, and we will work
@@ -444,7 +457,7 @@ single machine, and the EFS test suite doesn't even use NFS today.  It
 fakes the NFS volumes by creating local directories in /var/tmp, and
 then creates a fake /.efsadmin namespace as a symlink tree.  The test
 suite doesn't even use autofs, since we're not testing NFS and autofs,
-we're testing EFS funcionality.
+we're testing EFS functionality.
 
 This works because NFS is transparent EFS, and that won't be true for
 AFS.  EFS can modify a file in NFS using the same semantics as is
