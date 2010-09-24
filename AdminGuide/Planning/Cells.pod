@@ -34,8 +34,8 @@ organization, then you might use a subdomain like:
     engineering.bigbank.com
 
 Remember that EFS supports both development and production cells, and
-there is no support for inter-domain sharing of information, so we
-recommend creating a single domain that can support your entire
+there is minimal support for inter-domain sharing of information, so
+we recommend creating a single domain that can support your entire
 organization.
 
 The rest of these examples in this document will assume a root domain

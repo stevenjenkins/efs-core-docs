@@ -1,0 +1,381 @@
+
+=head1 EFS meets OpenAFS
+
+This document is a collection of ideas on how to approach extending
+EFS to support the product that was used to develop it's immediate
+predecessor, AFS/VMS.  EFS started life as an attempt to implement an
+advanced AFS-based infrastructure on top of NFS, so by extending to
+use OpenAFS, it it really going back to it's roots.
+
+=head1 Mapping Terminology
+
+=head2 EFS Domain
+
+We use the term "EFS Domain" to refer to a single instance of an EFS
+database, collection of cells and servers, all of which are configured
+and managed under a single top level "domain".  However, the
+relationship between the EFS domain, and other technologies which use
+the same terminology is not very intuitive.
+
+We expect each EFS domain to be implemented in a single top level DNS
+domain, but this is not a hard requirement (in fact, the proprietary
+EFS 2 environment spans several internal corporate DNS domains),
+merely a best practice.
+
+Because EFS is implemented on top of NFSv3 today, and implements
+transparent, global visibility of the entire /efs/dev namespace, there
+is an implicit assumption that the EFS domain also represents a single
+authentication domain, or a single Kerberos realm.  EFS, and it's
+predecessors, all seek to create a single, global "virtual"
+administrative domain in top of "local" domains that are integrated to
+appear as a single unit.
+
+This is a bit of a black art.  Very few technologies truly scale
+globally.  DNS would be one of the rare examples.  Kerberos can also
+be scaled globally as well, but even OpenAFS fails to scale that well.
+It is well known that OpenAFS fileservers can scale almost infinitely,
+but OpenAFS database servers, due to limitations in the Ubik protocol,
+do not.  UNIX naming service technologies, like NIS, NIS+, and LDAP,
+also suffers from similar limitations, and in most real worl
+environments, if you are trying to maintain system integration and
+ease of use and scale globally, it means figuring out how to build a
+global virtual domain by managing a collection of smaller ones.
+
+In the AFS/VMS environment, we solved this problem by centrally
+managing a collection of independent AFS cells, and via VMS, made them
+appear to the end-users as an integrated environment.  The biggest
+challenge was on the securtity side, and since we were building our
+own Kerberos infrastructrue, we were able to address these issues, but
+did so in proprietary ways.  For example, we creating our own tools
+for authentication that transparently converted the user's Kerberos
+credentials from the single, global realm we used, into AFS tokens for
+B<all> of the cells in the environment, simultaneously.  That only
+worked because we used the same KeyFile on all of our cells globally.
+
+These approaches worked for AFS/VMS, because we had complete top to
+bottom ownership of the infrastructure.  Clearly, until EFS can
+support the entire OpenAFS cell infrastructure from top to bottom, we
+can not make this same assumption.  The goal will be to determine how
+to best extend EFS to support the way OpenAFS is used today.  The goal
+is B<not> to produce a complete, turn-key, fully automated OpenAFS
+management infrastructure on day one (although that is the long term
+goal, it will take years), but rather to find a way to bring the
+powerful functionality of EFS to existing users of OpenAFS.
+
+=head1 Changes to /efs
+
+First of all, one of the goals of this project will be to maintain
+compatibility with NFS-based environments, and that simply means
+maintaining the /efs/dev and /efs/dist namespaces, whether implemented
+on NFS or OpenAFS.  Since the "exec" mechanism in EFS was originally
+based on the AFS @sys mechanism, this will be very straight forward.
+However, there will be several things that have to change.
+
+=head2 /efs
+
+The /efs name is implemented on the existing NFS-based efsclient as a
+plain directory which contains NFS mounts (/efs/dist and /efs/dev) for
+volumes on the cell's NFS servers.  In an OpenAFS implementation,
+since we want all of the data to live /afs somewhere, and since we
+want to be able to install EFS and use it in existing OpenAFS cells
+(requiring totally new cell infrastructure would pretty much guarantee
+that noone adopts it), both /efs/dev and /efs/dist can be simple
+symlinks into the /afs/$localcell directory structure somewhere.
+
+EFS will require a "root" volume, underneath which mount points for
+additonal volumes which make up the namespace will be mounted.  We
+should be able to make this configurable per-cell, but the
+recommendation will be to add this "root" EFS volumes as high as possible:
+
+    /afs/$localcell/efs
+
+Then:
+
+    /efs/dist -> /afs/$localcell/efs/dist
+    /efs/dev  -> /afs/$localcell/efs/dev
+
+=head2 /.efs
+
+This entire directory exists for the purpose of implementing the
+indirection necessary to simulate the AFS @sys mechanism in NFS, so on
+an OpenAFS-based efsclient, it is entirely unnecessary.
+
+=head1 Breaking /efs/dist down into a volume hierarchy
+
+The NFS based implementation of OpenAFS manages the content of the NFS
+servers in a very simple manner, since each cell has a single, large
+volume for /efs/dist, or /efs/dev in the case of a dev cell.  Since
+modern NAS filers can support multi-TB volumes, and since we have
+never pushed to total size of /efs/dist past even a single TB, this
+approach as scaled quite well in practice.  EFS creates subdirectories
+in these volumes simply using "mkdir", and there is no support for
+multiplexing a single /efs/dist instance across multiple NFS volumes.
+
+In an OpenAFS implementation, we wish to leverage the OpenAFS volume
+functionality, and create a hierarchy of EFS-specific volumes and
+mount points, all managed by the EFS software of course.  
+
+=head2 Volume Names
+
+One of the biggest challenges facing any OpenAFS administrator to this
+day, is the absurdly short limit on volume names of 22 characters.
+This makese it very difficult to represent the pathnames where each
+volume is mounted, in fact impossible.
+
+The AFS/VMS implementation solved this problem by using a relational
+database to manage the volume to pathname mapping, and EFS will need
+to do the same.  Therefore, the goal is to encode a minimal subset of
+the metadata for each volume into the name itself, and use a numeric
+index to ensure volume uniqueness.  A convention such as:
+
+   efs.$type.$metaproj.$index
+
+Where $type is "dev" or "dist", $metaproj is the metaproj name, and
+the $index is a monotonically increasing integer.  This will allow for
+easily visual recognition of where in the directory structure a given
+volume is used.  Determining the actual pathname will require
+resolving the volume name in the EFS database, using the EFS API or
+CLI.  Because metaproj names are allowed to as long as 32 characters
+(even though we encourage the use of short and sweet names), we can't
+fit the entire metaproj name into the volume name, obviously.  In
+order to ensure have room to grow the index values, we will truncate
+the metaproj names and only use the first N characters.
+
+The fixed prefix is already using up 9 characters (efs.dist.), leaving
+us with 13 characters to play with.  The longer the metaproj name, the
+shorter the index, and we want to leabve plenty of room for the index
+to grow.  Over 15 years of using AFS/VMS with a similar architecture,
+the volume index has grown to.... (XXX: ask someone at MS -- I think
+it's 7 digits now).  That would mean 17 characters are used by the
+prefix and suffix, and leave us with 5 characters for the metaproj
+tag.
+
+It seems that we're wasting precious volume name space with the
+"efs.dev." and "efs.dist" prefixes, so an alternative approach would
+be to use short volume prefixes for EFS.  The main issue here is
+coming up with a naming convention that will peacefully co-exist with
+the existing conventions used by OpenAFS users of EFS.  It will be
+difficult, but possible, to make the volume naming conventions be
+customizable, per EFS-domain, or perhaps even per-cell.
+
+=head2 Volume Mount Point Heirarchy
+
+The namespace can then be implemented in a volume heirarchy as follows.
+
+   Pathname                          Volume Example
+   ========                          ==============
+   /efs/dist                         efs.dist
+   /efs/dist/gnu                     efs.dist.gnu.1
+   /efs/dist/gnu/gcc                 efs.dist.gnu.2
+   /efs/dist/gnu/gcc/4.4.4-build001  efs.dist.gnu.3
+
+That is, mount points at the dev/dist, metaproj, project and release
+directories, and nowhere else.  AFS/VMS used volumes for each install,
+but that was primarily because the distribution mechanism used AFS
+volume level dump/restore, and in EFS we do not plan to use that same
+mechanism, since we want EFS to support multiple backend distributed
+filesystems.
+
+=head2 Global vs Cell-specific Volume Names
+
+One decision which will have a huge impact on the EFS database is
+designed for OpenAFS is whether or not volume names will be unique to
+each EFS cell, or unique to each EFS domain.  The author prefers the
+former, but if we're unable to come up with a standard EFS volume
+naming convention that can work for the early adopters, then we might
+find ourselves forced to support per-cell volume names.
+
+Either implementation is possible, but per-domain would be much
+simpler to implement, and it will make problem resolution a bit
+simpler, when the volume names are consistent within a single domain.
+
+=head2 O
+
+=head1 Managing OpenAFS
+
+In the NFS-based EFS cells, the coupling bewteen EFS and NFS is very
+weak.  The EFS server software assumes basic UFS filesystem semantics
+for the pathnames it modifies, and the only relationship to NFS is
+really that we access the writable pathnames via autofs maps, and a
+special administrative namespace (/.efsadmin).
+
+=head2 ACLs
+
+That will have to change in order to support both NFSv4 and AFS.  The
+key here is that both filesystems provide us with ACL mechanisms that
+are far superior to the basic UFS permissioning schemes for
+controlling access.  Making a file readonly won't just be "chmod"
+anymore.
+
+First and foremost, a simple EFS::ACL abstraction will be implemented
+so that both NFSv4 and OpenAFS ACLs can be managed through a common
+API.  That same module can probably fake the ACLs for NFSv3
+filesystems, too, with a little creativity.  
+
+=head2 Volume Management
+
+This is easily the biggest challenge.  In an NFSv3 or NFSv4 EFS cell,
+we will continue to assume that a single large NFS volume can be used
+to implement either /efs/dev or /efs/dist, and setting this up is for
+the most part done once per cell.  The ongoing maintenance required of
+the physical fileservers and volumes has proven to be minimal in the
+EFS 2 environment (and this is good, because none of it is automated).
+
+In an OpenAFS cell, that approach would be a huge mistake.  If we
+assume the proposed volume name and mount point structure discussed
+above, then the EFS software will need to be able to create and
+replicate volumes.
+
+=head1 EFS Extensions
+
+In this section, I'll discuss the specific things we need to change in
+the EFS design to make adding NFSv4 and OpenAFS support feasible.
+
+=head2 Cell Types
+
+We will need a new colume in the "cell" table to track the filesystem
+type of the cell.  I am proposing that each distinct cell be defined
+as either "nfs" or "afs", since the differences between NFSv3 and
+NFSv4 are relatively small, I think v3 vs v4 can be managed as
+attributes of the individual fileshares, and that will make upgrading
+an "nfs cell" from v3 to v4 easier and simpler.
+
+There is already a "celltype" column for cells (dev or prod), so I
+propose the new column be named "fstype", and have values of "nfs" or
+"afs" (NOTE: if we need, for political reasons to use "openafs" here,
+then fine -- not worth fighting over, but I like short and sweet
+keywords).
+
+=head2 Fileservers and Fileshares
+
+Long term, I want to take over the world, and extend EFS to support
+the complete lifecycle of a cell from the beginning through the end of
+it's life, but initially we have to assume that we're working with
+existing cells, and that EFS is responsible for a subset of it.
+
+Today, a cell is assumed to have one fileserver, in the NFS case.
+That doesn't need to change (although it's possible we'll do so and
+support multiple NFS servers anyway, but that's a separate issue).
+For an OpenAFS cell, you would simply define the fileservers and
+fileshares that you want EFS to use for creating and replicating
+volumes.  For example, for a cell names "d.foo":
+
+    efs define fileserver d.foo fooafs1.example.com
+    efs define fileshare  d.foo fooafs1.example.com /vicepa
+    efs define fileshare  d.foo fooafs1.example.com /vicepb
+    efs define fileshare  d.foo fooafs1.example.com /vicepc
+
+You might have lots of other vice partitions on that server, but EFS
+will only use the ones you have told it about, and ignore everything
+else.
+
+=head3 Number of readonly replicas
+
+First of all, EFS will always create the first readonly replica as a
+clone of the readwrite volume, something that I would hope in 2010 is
+an obvious optimization.
+
+The number of readonly replicas created for each volume should default
+to 3, or the number of available fileservers, which ever is larger.
+That default value should be sufficient for most OpenAFS sites, but we
+will make it a per-cell attributes that can be tuned.
+
+However, only "dev" cells will be allowed to have a single fileserver.
+I want to set the bar for "prod" cells a little higher, and B<require>
+at least two fileservers, so that we have basic redundancy.  We should
+still recommend and encourage dev cells to be configured with the same
+redundancy, but be flexible and allow smaller scale deployment as
+well.
+
+=head3 Creating mount points
+
+This is actually one of the more subtle and difficult problems to
+solve.  Creating and manipulating volumes is actually pretty easy,
+since you do everything via "vos".  However, in order to create mount
+points, we need to access the readwrite volumes via the filesystem,
+and it seems that every site has their own conventions for supporting
+this.
+
+In the AFS/VMS environment, we solved this problem in an
+unconventional way.  We basically created a scratch space local to
+each cell for the purpose of temporarily mounting and unmounting
+volumes in order to modify the contents.
+
+In the EFS NFS implementation, we solved the analgous problem with the
+/.efsadmin autofs namespace.   The structure is:
+
+    /.efsadmin/$cell/$fileserver/$fileshare/$fileqtree
+
+and this provides direct administrative access to the root directory
+of each and every NFS volume managed by EFS.  EFS doesn't read or
+write the contents of /efs/dist via the /efs/dist pathname, it does so
+via the /.efsadmin namespace.
+
+EFS has to address this problem in a generic way that can be used in
+existing EFS cells, with minimal disruption.  Furthermore, bear in
+mind that individual EFS servers can support an abitrary number of
+cells, since they are all made visible via the /.efsadmin namespace.
+If we want to continue supporting a many-to-many relationship between
+EFS cells and EFS servers, then we'll need to be able to access
+readwrite volumes in cells other than the one users for each EFS
+server's /afscache.
+
+=head2 Fileqtrees
+
+This concept is an anachronism, and results form the fact that EFS 1
+was implemented on top of NetApp NAS Filers, and we were required to
+create a qtree in each volume.  In B<ALL> cases, these are a single
+directory named "efs_qtree", as a convention.  While we need to
+address the use of this object in the NFS cases, I think we can simply
+ignore them for AFS cells.  Just don't define them, and even if you
+did, the code's not going to pay any attention to them.
+
+=head1 Perl Modules and other Software
+
+=head2 AFS::Command and the other AFS::* modules
+
+I was the original author of AFS::Command, and as far as CPAN is
+concerned, I still own it.  The last version I uploaded to CPAN before
+quitting Morgan Stanley was 1.7, however, the engineers at MS have
+continued to upgrade this module, and I beleive they are on version
+1.11.
+
+I've warned them that I want my code back, and I will work with them
+to get the latest release posted on CPAN, and I only mention this here
+because this could prove to be a problem for them.  Rumor has it that
+the version they are using is NOT generic enough to be published on
+CPAN, in which case, they will be forced to maintain that as a forked
+version, or clean it up.  
+
+I will also use the other AFS::* perl modules, where appropriate, and
+I am looking forward to improving how those modules interoperate, and
+adding more base functionality to AFS::Command.
+
+=head2 rsync
+
+The basic distribution mechanism is built around rsync, and it's lack
+of AFS ACL support may prove to be a problem.  At the end of the day,
+we simply need a reliable, efficient mechanism for copying one
+directory to another, and if an ACL-aware rsync isn't feasible, we'll
+need to use something else.
+
+Note that based on my extensive experience using vos dump/restore as
+the distribution mechanism in AFS/VMS, I want to avoid that approach.
+It was a reasonable judgment call back in 1995, but over the years,
+has proven to be a liability and a weakness in the AFS/VMS
+architecture.
+
+Worst case, we can write our own low-level replication mechanism since
+we only use a small subset of rsync's functionality, and we do not
+really need the extreme efficiency of it's incremental update
+mechanism.  That is icing on the proverbial cake, really.
+
+The goal will be to leverage existing replication mechanisms, but we
+have some flexibility here.  The most important requirement is to find
+something that we can use to support ACLs, of course.  It is not a
+requirement that we continue using the same mechanism for NFSv3, NFSv4
+and OpenAFS, but whatever mechanism are used simply need to be able to
+mirror, with reasonable efficiency, the install contents of a release
+into it's counterpart directory in /efs/dist.
+
+=cut
