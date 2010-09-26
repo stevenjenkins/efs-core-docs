@@ -423,7 +423,7 @@ at least one client-side change: introduction of /efs.  I think it is
 reasonable to require that the EFS instance names be added to the list
 of @sys values used on the client's as well.  Whether the EFS name is
 prepended or appended to the existing @sys list can be configurable.
-This was easily be automated in the "efsclient" boot script (which on
+This can easily be automated in the "efsclient" boot script (which on
 OpenAFS clients will really only need to be run once, when EFS is
 installed on the machine, not on every reboot).
 
@@ -546,5 +546,20 @@ The "core" machine will be setup as the "afslocal" cell.  The
 "afsremote" machine will be setup as a single-server AFS cell for the
 remove dev cell, and the "afsprod1/2" machines will be the two-server
 AFS cell for the local prod cell.
+
+We will need to be able to set this up two different ways, as well:
+single vs. multiple Kerberos realms.  It is clear there will be two
+deployment models, based on how real-world sites manage Kerberos and
+OpenAFS.  What isn't clear yet is whether we need to focus on the
+multiple-realm scenario or the single-realm scenario first.  That
+should be driven by the requirements of potential early adopters of
+EFS.
+
+The initial implementation of the test.efs setup will certainly be
+done using a single Kerberos realm, since it has existing support for
+setting up a single TEST.EFS realm, and we'll merely be adding OpenAFS
+to the configuration.  Once the automation for creating the three
+OpenAFS cells is done, then the next step would be to automate
+configuring multiple realms.
 
 =cut
