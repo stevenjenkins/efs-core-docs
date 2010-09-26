@@ -402,7 +402,7 @@ This is a huge strategic issue, too.  These names are not flexible if
 we want to maintain the ability to share pre-built binary content
 among the various EFS domains, which is something we are convinced
 will add tremendous value to the EFS ecosystem.  This is only possible
-as long as the EFS domains that wish to participate in binary shared
+as long as the EFS domains that wish to participate in binary sharing
 maintain the same, standard platform namespace.
 
 There are a few non-trivial issues to consider here.  For starters,
