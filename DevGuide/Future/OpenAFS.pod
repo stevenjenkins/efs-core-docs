@@ -385,12 +385,60 @@ extension is to add a column to each table (metaproj, project, and
 release).  If they are per-cell, then we will need new tables and
 classes to manage this data.
 
+For the record, the author is convinced that per-domain is the right
+way to go.
+
+=head2 Platforms, Instances and @sys names
+
+EFS has a very well defined platform and instance namespace which is
+engineered to reflect the way that we build and provide binary content
+for the EFS namespace.  This namespace is fairly well documented
+(unlike some other parts of EFS), and has a fairly obvious
+relationship with the AFS sysname values, since these names are based
+on those used as the sysnames on the AFS clients in the AFS/VMS
+implementation.
+
+This is a huge strategic issue, too.  These names are not flexible if
+we want to maintain the ability to share pre-built binary content
+among the various EFS domains, which is something we are convinced
+will add tremendous value to the EFS ecosystem.  This is only possible
+as long as the EFS domains that wish to participate in binary shared
+maintain the same, standard platform namespace.
+
+There are a few non-trivial issues to consider here.  For starters,
+the EFS platform and instance namespace is more specific that the
+default OpenAFS @sys namespace.  The default @sys value for both RHEL
+4 and 5 is the same (amd64_linux26) since both platforms are based on
+the Linux 2.6 kernel, but in EFS, these are separate values
+(amd64.linux.2.6 and amd64.rhel.5).  In fact, as the names show, EFS
+was forced to stop using the kernel in the names when RHEL5 came out,
+and that was when we decided to base the platforms and instances on
+the OS name, not the generic kernel.  It is therefore ambiguous which
+EFS instance value should be associated with the amd64_linux26 @sys
+value.
+
+In order to deploy EFS at existing OpenAFS sites, we want to make
+deploying EFS as minimally intrusive as possible.  We already require
+at least one client-side change: introduction of /efs.  I think it is
+reasonable to require that the EFS instance names be added to the list
+of @sys values used on the client's as well.  Whether the EFS name is
+prepended or appended to the existing @sys list can be configurable.
+This was easily be automated in the "efsclient" boot script (which on
+OpenAFS clients will really only need to be run once, when EFS is
+installed on the machine, not on every reboot).
+
+If we are able to assert the EFS instance names as extensions to the
+OpenAFS @sys list, then this problem is actually trivial to solve.  If
+there are technical reasons why we can't do this, and we are forced to
+add the default @sys values to the platform/instance namespace, then
+this is quite a challenge, due to the lack of a 1-1 mapping.
+
 =head1 Perl Modules and other Software
 
 =head2 AFS::Command and the other AFS::* modules
 
 Phil was the original author of AFS::Command, and as far as CPAN is
-concerned, he still own it.  The last version uploaded to CPAN before
+concerned, he still owns it.  The last version uploaded to CPAN before
 he quit Morgan Stanley was 1.7, however, the engineers at MS have
 continued to upgrade this module, and we believe they are on version
 1.11.
