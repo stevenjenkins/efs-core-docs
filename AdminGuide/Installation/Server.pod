@@ -19,15 +19,25 @@ As root:
     ./util/efs_bootstrap_install
     ./util/efs_bootstrap_database
     ./util/efs_bootstrap_domain
-    su efsops -c ./util/efs_bootstrap_namespace
+
+As efsops:
+
+    cd /path/to/efs/core/source
+    export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
+    PATH=/usr/efs/bin:$PATH
+    ./util/efs_bootstrap_namespace
 
 Keep reading to understand how to prepare the required infrastructure,
 write the config file, and understand what you're doing.  You can also
-run all 4 of the scripts above with one simple wrapper:
+run all 4 of the scripts above with one simple wrapper, if you are
+B<NOT> using GSSAPI as an authentication mechanism:
 
     cd /path/to/efs/core/source
     export EFS_BOOTSTRAP_CONFIG=/path/to/your/file.conf
     ./util/efs_bootstrap_all
+
+If you are using GSSAPI, then you will need to authenticate as efsops
+before running efs_bootstrap_namespace.
 
 If there are issues running any of the individual scripts, you will
 need to run them individually to complete the process.
