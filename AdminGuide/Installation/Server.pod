@@ -100,6 +100,14 @@ Each volume must have a single top level directory, named "efs_qtree".
 On a NetApp NAS filer, this would be an actual qtree object.  On a
 vanilla NFS server, it can be a plain directory.
 
+These volumes must be exported using both the "tcp" and "nfs3"
+options.  The EFS autofs maps, and the mount calls made by the
+efsclient, will use both nfs3 and tcp.
+
+The pathnames must be based on /vol, and if you use a different naming
+convention for the mounts on the actual fileserver, the exported names
+must match the conventions shown above.
+
 =head1 Configuring the Bootstrap Process
 
 It is possible to write a single configuration file for all of these
@@ -135,7 +143,8 @@ would like something like this:
         distshare   = /vol/efs_dist
 
 To use the recommended approach, write the necessary information into
-a file and export the following environment variable:
+the file /etc/efs/bootstrap.conf.  If you use a different pathname,
+then you will need to export the following environment variable:
 
     export EFS_BOOTSTRAP_CONFIG=/path/to/bootstrap.conf
 

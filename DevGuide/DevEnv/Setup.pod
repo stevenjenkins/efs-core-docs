@@ -49,10 +49,10 @@ cell name.
 
 =head3 Configuring the core server
 
-The first VM must be an x86_64 CentOS 5.4 server.  The other test
-machine pairs can be any supported EFS client operating .  However,
-the code to setup the core services has only been tested on CentOS
-5.4.
+The first VM must be an x86_64 CentOS 5.4 or newer server.  The other
+test machine pairs can be any supported EFS client operating .
+However, the code to setup the core services has only been tested on
+CentOS 5.4 and 5.5.
 
 Copy the efs_virtual_machine script to the server, and run it as
 follows:
@@ -60,7 +60,9 @@ follows:
     efs_virtual_machine t.foo.baz.reg.test.efs core
 
 This will auto-configure a long list of operating system services, and
-then reboot the machine when successful.
+then reboot the machine when successful.  Once the core server has
+finished it's first reboot, then and only then, can you configure the
+other test.efs servers.
 
 =head3 Configuring the test machine pairs
 
@@ -111,14 +113,16 @@ each domain.
 
 The core server for boot.efs is very similar to the core server for
 test.efs, but they are required to be separate machines.  The same
-requirement for CentOS 5.4 holds for boot.efs as well.
+requirement for CentOS 5.4 or 5.5 holds for boot.efs as well.
 
 Copy efs_virtual_machine to the new VM and run:
 
     efs_virtual_machine d.bar.baz.reg.boot.efs core
 
-This will do the same thing is does for the test.efs server.
-Configure core services and reboot.
+This will do the same thing is does for the test.efs server: Configure
+core services and reboot.  Once the core server has finished it's
+first reboot, then and only then, can you configure the other boot.efs
+servers.
 
 =head3 Configuring the initial EFS server
 
