@@ -35,7 +35,7 @@ credentials, but you will need to do this manually as follows:
 
 Even if you're running the AFS enabled version of the EFS test suite,
 you don't need AFS tokens, just the basic krb5 credentials for
-client/server authentication.  Note that even though your are logged
+client/server authentication.  Note that even though you are logged
 in as "efstest", we're manually authenticating as "efsops".
 
 Then, run the efs client as follows:
