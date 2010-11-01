@@ -1,0 +1,52 @@
+
+=head1 Debugging EFS
+
+=head2 Debugging efsd in the test.efs environment
+
+In order to debug efsd in the test.efs setup, you have to run the test
+suite through at least the 00_setup scripts, and depending on what you
+intend to debug, the 05_startup scripts as well.
+
+Debugging efsd is a two step process. First, you have to run efsd in
+the debugger and set the appropriate break point of interest, and then
+in a separate shell you run the client to initiate the efsd operation.
+
+In the shell you're using to run "prove ... test/*", invoke perl as
+follows:
+
+    perl -Mblib -d bin/efsd --restart
+
+This should present you with a perl debugger prompt.  Let's suppose
+you want to debug the checkpoint operation.   Set this breakpoint:
+
+    b EFS::CLI::Release::checkpoint_rpc
+    c
+
+This efsd should kill the currently running efsd (if you ran the
+05_startup scripts), and then listen for incoming connections.
+
+In the shell you're using to run "perl Makefile.PL && make", you will
+run the efs client command, but first you have to deal with
+authentication.  When the efs client is run in the test suite, code in
+EFS/Test.pm takes care of acquiring Kerberos credentials, but you will
+need to do this manually as follows:
+
+    kinit -k -t /var/kerberos/keytabs/efsops.keytab efsops
+
+Even if you're running the AFS enabled version of the EFS test suite,
+you don't need AFS tokens, just the basic krb5 credentials for
+client/server authentication.
+
+Then, run the efs client as follows:
+
+    perl -Mblib bin/efs checkpoint release $m $p $r --serverhost $(hostname -f)
+
+This should connect to the efsd you have running in the debugger, as
+described above.  You should be back at the debugging prompt at the
+beginning of the function where the breakpoint was set.
+
+=head2 Debugging efsd in a deployed release
+
+TBD
+
+=cut
