@@ -27,8 +27,8 @@ This efsd should kill the currently running efsd (if you ran the
 
 In a separate shell, running as the user efsops, you will run the efs
 client.  You may or may not need to manually authenticate, depending
-on how Kerberos authentication if configured.  In the current test.efs
-setup, we are not yet modifiying the PAM stack to use kerberos
+on how Kerberos authentication is configured.  In the current test.efs
+setup, we are not yet modifying the PAM stack to use kerberos
 authentication directly, so simply logging in with not acquire the
 necessary credentials.  You will need to do this manually as follows:
 
