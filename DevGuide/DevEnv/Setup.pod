@@ -23,7 +23,7 @@ the efs_virtual_machine script handle the rest.  Note that the VM
 templates need to have a number of optional packages installed already
 though.   See the documentation for efs-utils here:
 
-    http://docs.openefs.org/efs-utils/
+L<http://docs.openefs.org/efs-utils/>
 
 =head3 Choosing a cell name
 
