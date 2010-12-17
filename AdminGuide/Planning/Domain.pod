@@ -1,0 +1,12 @@
+
+=head1 The EFS Domain
+
+EFS is intended to implement a global namespace for software
+development and deployment using multiple cells within a single
+logical domain.  In order to successfully deploy EFS, it is critical
+that the administrators have a clear understanding of just what these
+terms mean in the context of EFS.
+
+WIP...
+
+=cut    

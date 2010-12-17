@@ -89,10 +89,12 @@ there is one other essential package that must be installed as well:
 efs-deploy, which will be used to build the content into /efs/dist
 properly.
 
-This is also done using the efs_bootstrap_install utility:
+This is done by using the perl installed in efs/core/bootstrap, and
+performing a "normal" CPAN module install:
 
    cd /path/to/efs-deploy
-   /path/to/efs-core/source/util/efs_bootstrap_install --skip=perl --perl=source 
+   PATH=/efs/dist/efs/core/bootstrap/exec/bin:$PATH
+   perl Makefile.PL && make test install
 
 Once this is done, then you need to get the compilers bootstrapped.
 
@@ -121,7 +123,15 @@ here are relative to the src tree:
 There are 3 files you can use as templates in the same directory as
 the GNUmakefile.  These files are also documented in the efsdeploy man
 pages.  The primary thing you have to localize to each EFS domain are
-the compile server hostnames in platforms.conf.
+the compile server hostnames in platforms.conf.  Once these 3 files
+have been customized for your environment, then install and deploy
+them as follows:
+
+    cd /efs/dev/efs/deploy-config/1.0/src
+    make install checkpoint dist current
+
+The last target will create the "efs/deploy/current" releasealias,
+which is where efsdeploy searches for the config files by default.
 
 =head1 Bootstrapping the Compilers
 
@@ -205,6 +215,9 @@ efsdeploy state will be "pass"), and that means you MUST use the
 --platforms options, or you will be rebuilding everything.
 
 =head2 Bootstrapping Perl
+
+WARNING: This section needs to be re-written to reflect the separation
+of EFS::Perl::Depends from the perl5/core releases.
 
 Now that you have some C compilers in EFS, you can build the perl
 compilers.  This is essentially the same process as above.
