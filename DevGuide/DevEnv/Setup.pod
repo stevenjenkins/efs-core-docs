@@ -18,8 +18,12 @@ managed directly by EFS.  For example: Kerberos, NIS, DNS, etc.  The
 other two machines are ones that run the EFS test suite.
 
 First, create three "raw" VMs.  We create these by installing the
-simplest, minimal set of software when instaling the OS, and then let
-the efs_virtual_machine script handle the rest.
+simplest, minimal set of software when installing the OS, and then let
+the efs_virtual_machine script handle the rest.  Note that the VM
+templates need to have a number of optional packages installed already
+though.   See the documentation for efs-utils here:
+
+    http://docs.openefs.org/efs-utils/
 
 =head3 Choosing a cell name
 
