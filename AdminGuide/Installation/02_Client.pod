@@ -139,14 +139,14 @@ On all other platforms,
 
 This should create 4 NFS mounts, and look something like this:
 
-$servername:/vol/efs_dist/efs_qtree/amd64.rhel.5/dist
-                      16220096   2118496  13264384  14% /.efs/dist
-$servername:/vol/efs_dist/efs_qtree/dist
-                      16220096   2118496  13264384  14% /efs/dist
-$servername:/vol/efs_dev_d_gnu/efs_qtree/amd64.rhel.5/dev
-                      16220096   2118496  13264384  14% /.efs/dev
-$servername:/vol/efs_dev_d_gnu/efs_qtree/global
-                      16220096   2118496  13264384  14% /efs/dev
+    $servername:/vol/efs_dist/efs_qtree/amd64.rhel.5/dist
+                          16220096   2118496  13264384  14% /.efs/dist
+    $servername:/vol/efs_dist/efs_qtree/dist
+                          16220096   2118496  13264384  14% /efs/dist
+    $servername:/vol/efs_dev_d_gnu/efs_qtree/amd64.rhel.5/dev
+                          16220096   2118496  13264384  14% /.efs/dev
+    $servername:/vol/efs_dev_d_gnu/efs_qtree/global
+                          16220096   2118496  13264384  14% /efs/dev
 
 On the EFS server, where the client NFS mounts have already been
 created, you do not need to start the client, but you do need to
