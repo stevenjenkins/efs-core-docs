@@ -53,15 +53,21 @@ values:
     sunos       Sun's Solaris OS
     rhel        Red Hat Enterprise Linux
     ubuntu      Ubuntu Linux
+    debian      Debian Linux
+    freebsd     FreeBSD
 
 =head3 Operating System Releases
 
 For sunos: 5.10, 5.11, etc.
 
+For rhel: 5, 6, etc.
+
 For ubuntu: 9.4, 9.10, 10.4, etc., based on the 6 month release
 schedules of the Ubuntu community.
 
-For rhel: 5, 6, etc.
+For debian: 5.0, etc.
+
+For freebsd: 8.0, 8.1, etc.
 
 =head2 Platform Instances
 
@@ -150,7 +156,7 @@ it's underlying platform.  This will include all of the following:
     /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.11 -> sparc32.sunos.10
     /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.11 -> sparc32.sunos.10
 
-This is great, if you are accessing this software using a platform of
+This is great, if you are accessing this software using a platform or
 instance specific path.  However, there is a platform independent way
 to access the subdirectories of .exec, through a pair of symlinks.
 
