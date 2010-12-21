@@ -19,39 +19,49 @@ fact, by design, root does not have write permission on the /efs
 namespace on the EFS clients.  Direct use of root is only necessary
 during the server and client bootstrap processes.
 
-=head2 PATH
+=head2 Bootstrapping vs "Porting"
 
-In all cases, we assume that before running any of the commands shown,
-you have modified your PATH as follows:
+If you are bootstrapping the content for a new EFS domain using
+existing, supported EFS client platforms, then you can use the
+efs_bootstrap_content script.
 
-    PATH=/efs/dist/efs/core/bootstrap/exec/bin:$PATH
+If you are "porting" content to a new set of EFS client platforms,
+then you will need to follow the procedures documented in the DevGuide
+documentation on porting content, since you will need to build the
+components of the /efs/dist namespace from scratch.  See:
 
-This ensures that the correct versions of efs, perl, etc. are used
-during the process.  Failure to make this PATH customization will
-result in the bootstrap failing as well.
+L<http://docs.openefs.org/efs-core-docs/DevGuide/Porting/Content.html>
 
-=head1 Installing efsdeploy
+=head1 Running efs_bootstrap_content
 
-Copy the efsdeploy source code local to each of the client platforms,
-and install it.  Now, this is one of the very few times when you get
-to use the standard perl installation procedures for anything you
-install into EFS.  To install efsdeploy, in the root of the efsdeploy
-source tree, simply run:
+As the efsops user, run the following script form the efs-core source
+tree.
 
-    perl Makefile.PL
-    make
-    make test
-    make install
-    make clean
+    ./util/efs_bootstrap_content
 
-This is because the installation of EFS includes all of the optional
-CPAN modules required by efsdeploy (by design).  As you'll see,
-installing most perl software is usually significantly more complex
-than this, and in fact, efsdeploy is the very tool that you will use
-to automate such installations.
+By default, this will download content from
 
-=head1 Bootstrapping the gcc compilers
+    http://ftp.openefs.org/packages/binary
 
-=head1 Bootstrapping the perl compilers
+But this can be overridden in the bootstrap.conf file:
+
+    [content]
+        download_url = .....
+
+This script will configure a set of metaprojs defined in:
+
+    $download_url/bootstrap/metaprojs.txt
+
+and then download the releases (and all of thier dependencies) defined in:
+
+    $download_url/bootstrap/releases.txt
+
+Once this script completes, you will have releases of:
+
+    efs/core/dev
+    efs/deploy/dev
+
+that can be run from /efs/dist, with almost no dependencies on locally
+installed operating system software.
 
 =cut
