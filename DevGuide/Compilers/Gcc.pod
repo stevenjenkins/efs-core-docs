@@ -1,0 +1,10 @@
+
+=head1 EFS Compilers: Gcc
+
+This document explains how the GNU compiler suite is integrated with
+EFS, and how multiple versions of the compiler are able to peacefully
+co-exist, without any local package installation on the EFS clients.
+
+
+
+=cut    
