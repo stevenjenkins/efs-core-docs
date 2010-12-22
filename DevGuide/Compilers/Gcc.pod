@@ -5,6 +5,70 @@ This document explains how the GNU compiler suite is integrated with
 EFS, and how multiple versions of the compiler are able to peacefully
 co-exist, without any local package installation on the EFS clients.
 
+In a traditional UNIX/Linux installation, the compiler is integrated
+with the core OS, and switching from one compiler to another requires
+changing the versions of many of locally installed packages.
+Upgrading gcc usually requires upgrading binutils, as well as the
+runtime shared libraries such as libstdc++.so, which can impact
+existing, installed applications.
+
+In EFS, we have integrated gcc and it's related development tools with
+the /efs namespace, and avoided the dependency on almost all of the
+locally installed packages required to use gcc, which allows us to
+deploy as many specific gcc versions side by side as necessary.
+
+In addition, we make the official releases from gcc.gnu.org, and the
+specific vendor releases of gcc from the distribution vendors
+available side by side, so that development teams can be feature for
+feature (and bug for bug) compatible with thier compiler of choice.
+
+=head1 Gcc-related EFS Projects
+
+The gnu metaproj is intended to provide specific release of each
+project from gnu.org, and therefore the binutils, gcc, gmp and mpfr
+releases are all managed in these projects:
+
+    gnu/binutils
+    gnu/gmp
+    gnu/mpfr
+    gnu/gcc
+
+Since the release of the gcc 4.5 series, there is an additional
+dependency on the mpc product, which is not released on gnu.org, so
+that is installed in the generic "open source software" metaproj:
+
+    oss/mpc
+
+The vendor distribution specific gcc releases, which so far only
+includes the compilers for RHEL, are deployed in projects of the same
+name, but in the distribution-specific metaproj, in this case "rhel".
+RedHat does not provide a source rpm for either gmp or mpfr, so these
+builds depend on the gnu/gmp and gnu/mpfr projects, but both binutils
+and gcc are built from RHEL source rpms, and managed in:
+
+    rhel/binutils
+    rhel/gcc
+
+As we extend EFS support to additional Linux distributions (and
+possibly other commercial UNIX implementations as well), we will most
+likely provide similar releases in projects such as debian/binutils
+and debian/gcc.
+
+In additon to these projects, where the full installation of each
+product is installed for use by developers, we create runtime-only
+copies of the gcc shared libraries for each gcc release in:
+
+    gnu/gcclib
+    rhel/gcclib
+
+This is a very important customization.  As this document will explain
+in detail, gcc has been engineered to automatically create RPATH
+entries such that the binaries it links have dependencies on the
+shared libraries in these minimal gcclib projects, not on the full gcc
+installation itself.  This allows us to decommission gcc releases and
+remove them from the namespace while leaving the runtime dependencies
+alone.
+
 
 
 =cut    
