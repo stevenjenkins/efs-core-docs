@@ -1,0 +1,153 @@
+
+=head1 Managing EFS Projects
+
+=head2 What is a project?
+
+An EFS project is the container for releases, and the point in the
+/efs/dev namespace where the physical location of the readwrite data
+is determined.
+
+=head2 Project Naming Conventions and Use Cases
+
+Generally speaking, a project is usually associated with a single well
+defined "product", or perhaps component of a product.  The important
+thing to bear in mind is that projects can B<NOT> be renamed; it is
+simply not practical, since the pathnames used by the project will be
+hardcoded and embedded in far too many places to make a change
+practical.  You can always create a new project, rebuild all the
+releases you want to keep in the new one, destroy/purge them in the
+old, and in this way I<migrate> your project naming convention.  The
+point is to choose these names carefully, as you will tend to be stuck
+with them.
+
+=head3 Open Source Products
+
+The default convention for naming the projects used for open source
+products is to use the name most commonly associates with the product,
+or when that's ambiguous, the name used on the physical distribution
+of the source code.
+
+For example, just about every GNU project, and the overwhelming
+majority of open source products, are distributed in a single archive
+file that follows this convention:
+
+    $project-$release.(tgz|tar.gz|tar.bz2|....)
+
+When there's no obvious string to use for the project, we've always
+chosen the name from the distribution file like this.  This is
+particular useful, since tools like efsdeploy can specify the download
+location for an arbitrary project using macros like:
+
+    [download]
+        url = http://ftp.gnu.org/gnu/$project/$project-$releasealias.tar.gz
+
+=head3 Vendor Products
+
+Most vendors should have a fairly obvious name to use for each of
+their projects, and using the same name will make it easier to find
+the product in the namespace.
+
+The main issue here is that some vendor products are released as a
+collection of components (the server pieces, the APIs, the
+documentation, etc), and you will need to decide if you are managing
+these releases independently, or bundling them together.
+
+=head3 Proprietary Internally Developed Products
+
+For projects used to develop and deploy your own, internally developed
+proprietary software, the naming conventions are totally up to you.
+EFS is fairly agnostic about these conventions, and the only
+restrictions imposed are the choice of characters for the names, but
+otherwise anything goes.  The main advice we have to offer is to
+consider the conventions used for open source and vendor products as a
+starting point.
+
+However, assuming you're using some form of revision control for your
+software, we recommend a one to one mapping from each code repository
+to each EFS project.  This will make it far easier to develop tools to
+automate publishing source code from a repository such as CVS, SVN, or
+GIT into an EFS release.
+
+In the past, we had developed a (proprietary, sorry) tool called
+"svn2efs" which accomplished this goal, and we have a work in progress
+to develop "git2efs" to accomplish the same thing for git-based
+repositories.
+
+=head3 Other Use Cases
+
+EFS projects are normally used to deploy releases of software
+products, but since EFS is a generic mechanism, and cares very little
+about the actual content of your releases, you can use EFS to manage
+anything that can fit into the staged deployment paradigm it supports.
+
+For example, auto-generated configuration information is an excellent
+candidate for deployment via EFS, especially using the autorelease
+mechanism.  There's no reason that documentation can't be versionized
+and published via EFS.
+
+As this documentation evolves, we will strive to document specific
+non-standard use cases to highlight the diverse nature of the problems
+that EFS can be used to solve.
+
+=head2 Creating Projects
+
+Anyone with access to the dev role for a metaproj can create a
+project.  Once a name has been chosen, then the next decision is where
+in the enterprise the project needs to be located.  Nothing in the
+/efs/dev namespace is replicated between sites, expect perhaps for
+disaster recovery.  The project is the point in the namespace where
+the location decision is made.
+
+In any environment with several development cells, each project should
+normally be located as close to the primary group of developers as
+possible.  Teams that are split between geographic locations should
+consider breaking a single project into more than one, if WAN access
+will be prohibitive.  This is a classic "your mileage may vary"
+scenario, as it depends entirely on how well engineered your WAN is.
+Note that it should be perfectly reasonable for developers in a remote
+location to access and work on a remote project by working on machines
+that are "local" to the project, rather than by access the projects
+via the filesystem over the WAN.
+
+If the cell name for the project is not specified, then EFS will
+create it in the same dev cell as the client on which the efs CLI
+command was run.  This default behavior will usually produce correct
+results, but beware of London users creating a project while accessing
+a New York machine via ssh, and not thinking.
+
+The command to create a project is:
+
+    efs create project $metaproj $name [ $cell ]
+
+=head2 Moving Projects
+
+If you create a project in a wrong cell, or if at some point the
+responsibility for an existing project shifts from one location to
+another, or perhaps if an entire development team moves location, then
+you may need to move the actual project itself.
+
+Moving a project is simple.  Determine the new location of the
+project, and run:
+
+   efs move project $metaproj $name $cell
+
+The process of moving the data is fairly complex, however.  While the
+data is being moved, the /efs/dev path to the project will not be
+accessible.  Note that this has no impact on the access to the
+/efs/dist paths for the project at all.
+
+The amount of time required to move the project depends on several
+different factors: the WAN bandwidth between the old and new cells,
+the amount of data in the project's releases, and the performance of
+the EFS servers performing the move.  Moving a small project can take
+a few minutes, and a very large one can take several hours, so be
+prepared for significant development downtime for the project while
+the move is in progress.
+
+=head2 Destroying Projects
+
+Projects can be destroyed and removed from the namespace only after
+all of the releases in the project have been destroyed and purged,
+completely.
+
+=cut    
