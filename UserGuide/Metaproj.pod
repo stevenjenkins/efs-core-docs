@@ -69,6 +69,40 @@ is that perl6 is still moving very, very slowly, perl5 development is
 absolutely alive and well, and we're still building mission critical
 apps using perl5.   That won't change that anytime soon.
 
+=head3 Operating Systems
+
+In general, software which is part of the core operating system is not
+distributed via EFS, but instead is deployed using the operating
+system vendors own mechanism for updating the installed OS on each
+client machine.  However, there are several use cases where EFS can be
+used for making some operating system packages available in EFS.
+
+The most significant use case is when we provide packages from RHEL
+which have been from the source rpm.  The specific example is gcc and
+binutils.  We provide the release of gcc from gnu.org in the gnu/gcc
+project, but RedHat has been patching gcc and providing releases with
+important bug fixes which are often not found in the gnu.org releases
+right away.  Therefore, we provide EFS-integrated builds of the RHEL
+gcc packages in the rhel/gcc project, independent of the release found
+in gnu/gcc.
+
+There are several "standard" metaprojs used by the EFS team for
+deploying vendor operating system content, either products compiled
+directly from source (RHEL source rpms), or binary products that have
+been integrated with wrapper scripts (and other slight of hand).
+
+   Operating System		Metaproj Name
+   ================     	=============
+   Red Hat Enterprise Linux	rhel
+   Ubuntu Linux			ubuntu
+   Debian Linux			debian
+   FreeBSD			freebsd
+   Sun Solaris			solaris
+
+Presumably, we the need arises, we will also create metaprojs with
+names like: aix, hpux, etc.  based entirely on the real world need to
+deploy things from these vendors in EFS.
+
 =head3 Vendor Products
 
 Vendor products, by which we normally mean software products made
