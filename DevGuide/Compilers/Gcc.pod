@@ -22,7 +22,7 @@ specific vendor releases of gcc from the distribution vendors
 available side by side, so that development teams can be feature for
 feature (and bug for bug) compatible with thier compiler of choice.
 
-=head1 Gcc-related EFS Projects
+=head2 Gcc-related EFS Projects
 
 The gnu metaproj is intended to provide specific release of each
 project from gnu.org, and therefore the binutils, gcc, gmp and mpfr
@@ -68,6 +68,37 @@ shared libraries in these minimal gcclib projects, not on the full gcc
 installation itself.  This allows us to decommission gcc releases and
 remove them from the namespace while leaving the runtime dependencies
 alone.
+
+=head1 Building gcc
+
+=head2 Prerequisites: binutils, gmp, mpfr, and/or mpc
+
+Before we can compile any release of gcc into EFS, we need to first
+build 3 or 4 prerequisites.  There are usually specific feature
+dependencies from each major gcc release on at least a minimal version
+of binutils, for example, and as you will see we set up gcc to find an
+EFS-based ld and as by default.  Since the EFS based gcc builds
+support fortran, as well as C, C++, and objective C, we also need EFS
+based builds of gmp and mpfr.  As of gcc 4.5, gcc also depends on the
+mpc product as well.
+
+Each of these are very straight forward to build into /efs, and the
+downloadable EFS releases for each of these products will include the
+efsdeploy configuration to automate it.  When bootstrapping the
+namespace for the first time, these builds must be done on client
+platforms that have a local installation of gcc, but once you have gcc
+built into EFS, installing gcc locally will no longer be required.
+
+In order to make this process clear, let's walk through a specific
+example of first building gcc-4.5.2, and then the RHEL5 4.1.2
+compiler.  In all cases, the specific versions used are current at the
+time of this writing, and may or may not have been upgraded recently.
+
+=head3 Building gnu/binutils
+
+
+
+=head1 Using gcc
 
 
 

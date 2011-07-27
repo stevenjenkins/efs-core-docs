@@ -1,10 +1,259 @@
 
 =head1 Managing EFS Metaprojs
 
+=head2 What is a metaproj?
+
+An EFS metaproj is a container for projects, and the point of
+delegation in the namespace for granting non-administrative groups
+access to create project, releases, and manage content in /efs/dev and
+/efs/dist.
+
+=head2 Metaproj Naming Conventions and Use Cases
+
+Generally speaking, there are several major use cases for EFS
+metaprojs.   
+
+=head3 Open Source Products
+
+There are several "standard" metaproj names which we highly recommend
+using, especially if you intend to leverage the rich set of
+pre-compiled binaries made available by the EFS team on openefs.org,
+and even if you choose to build your own infrastructure from source,
+following these conventions will make it easier to share the efsdeploy
+build rules for the open source products we have integrated.
+
+The general purpose convention we have followed is to create metaprojs
+based on the name of the organization that provides a given collection
+of software products.  The two largest metaprojs so named are "gnu"
+and "apache", which is the default place where we deploy products from
+"gnu.org" and "apache.org".  The project names are then based on the
+actual product package names, in a fairly obvious and intuitive
+manner.
+
+Rather than create a lot of small metaprojs with only one or two
+products in them, we also created a general purpose metaproj called
+"oss", where we manage these products.   
+
+=head3 Language or other Infrastructure Metaprojs
+
+We have also created several metaprojs for managing development
+infrastructure for languages such as java, perl, python, ruby, etc.
+The names we've used for these are:
+
+   Metaproj	Description
+   ========	===========
+   java		Core Java infrastructure (various JDKs, JREs, and libraries)
+   perl5	Perl5 releases, and modules from CPAN
+   python	Similar to perl5
+   ruby		Similar to perl5
+
+We have also created separate metaprojs specific to major software
+products, such as the mysql and postgres database products.  This
+approach allows us to manage the core database product, and the
+various management utilities and supporting software for it, as a
+single subset of the namespace.  This also makes it easy to delegate
+management of these collections of projects as a unit as well.
+
+=head4 perl5 vs perl6
+
+One common objection is that we have explicitly created a metaproj
+just for perl5, seemingly ignoring perl6.  Because perl6 is in many
+ways an entirely new language, and because the extension mechanism is
+so very different, we felt that it would make sense to manage the two
+independently.  This was a fairly arbitrary decision, and you could
+probably build perl5 and perl6 side by side in a single metaproj, but
+we chose not to do this.
+
+Time will tell if this proves to me a mistake or not, but the reality
+is that perl6 is still moving very, very slowly, perl5 development is
+absolutely alive and well, and we're still building mission critical
+apps using perl5.   That won't change that anytime soon.
+
+=head3 Vendor Products
+
+Vendor products, by which we normally mean software products made
+available in binary form from a commercial vendor, can also be managed
+in EFS.  The convention we use here is to group them by the company
+name of the vendor, for example "ibm", or "oracle", etc.  Some very
+large products may make sense to break off into their own metaproj.
+For example, we have in the past managed IBM's MQSeries in its own
+"mq" metaproj.
+
+=head3 Proprietary Internally Developed Products
+
+We expect each organization deploying EFS to come up with its own
+naming conventions for internally developed products, with the names
+typically based on the company division, development team or product
+names.  The key here is to remember that the metaproj namespace is
+flat, and to avoid names which will likely clash with those used for
+the more general use cases described above.
+
+At the end of the day, the metaproj namespace is unique to each
+enterprise, and although there is some support for binary sharing
+between two unrelated enterprises, this is considered ad-hoc, and for
+the purposes of bootstrapping.  Having said that, if you give a
+metaproj named "python" to a business unit development team, just
+because they write their code in python, and then later want to
+support the actual programming language, you won't be able to do so,
+since you've already given that metaproj name away.
+
+One possible way to future-proof your metaproj namespace against a new
+shared metaproj name would be to prefix them with a shorthand string
+of characters representing your company.  For example, if IBM were to
+use EFS for internal development, they might use "ibm-" as the prefix.
+Morgan Stanley might us "ms-", and so on.
+
 =head1 Creating a metaproj
+
+This is the one thing that a member of the efsops groups has to do:
+define a new metaproj in the EFS database, and by specifying the users
+and groups with administrative access to the metaproj, delegate
+management of that new subset of the namespace.
+
+The efsops team will need to know the following information in order
+to create it:
+
+=over
+
+=item metaproj name
+
+The most critical piece of information: the name, as described above.
+
+=item primary username and groupname
+
+A UNIX user and a UNIX group, which will be used to specify the
+ownership of the writable directories created by EFS.  A single
+username or groupname can be used on multiple metaprojs, if necessary.
+
+=item owner email address
+
+An email address which will be used to contact the group of people
+that own, i.e. are responsible for, the metaproj.  This would
+typically include the various team leaders or managers involved in
+supporting the metaproj.
+
+=item notification email address (optional)
+
+An email address which will be used to send notifications of events in
+EFS that impact the metaproj.  This email group will likely include
+the entire team working on the metaproj.  If a notification list is
+not specified, then notifications will be sent to the owner list
+instead.
+
+=item metaproj admin users or groups
+
+A list of UNIX users, or groups, who will be granted admin rights on
+the metaproj.  These will be the users who are responsible for
+managing access control for the metaproj once it has been created by
+efsops.  The goal is for efsops to create the metaproj, and define the
+admin users, and then all further administration of the metaproj is
+then delegated to those admin users.
+
+=back
+
+Once this information has been collected and validated, then efsops
+can create the actual metaproj, and define the admin users, and then
+get on with other work.  From this point forward, efsops normally does
+not need to be involved in the normal user of the metaproj for
+development and deployment.
+
+The metaproj is created by running:
+
+    efs create metaproj $name $user $group $owner_list [ $notify_list ]
+
+The admin users are defined by running:
+
+    efs define userrights $metaproj admin $user
+    efs define grouprights $metaproj admin $group
+
+for each distinct user or group assigned to have these rights.
 
 =head1 Managing metaproj access and permissions
 
+Once a metaproj has been created, then the admin users need to setup
+and manage access to the metaproj.  There are five roles currently
+supported by EFS, and both users and groups can be assigned to have
+one or more of these roles.
+
+=over
+
+=item admin
+
+Users with the admin role have the ability to define all of the
+userrights and grouprights for a metaproj, 
+
+=item dev
+
+Users with the dev role will be permissioned to run efs CLI commands
+that affect releases in the "dev" and/or "rejected" stages.
+
+Users who are members of the groupname assigned to the metaproj have
+B<implicit> dev rights, without being explicitly defined to have this
+role.
+
+In environments using NFSv3, this is the only way in which EFS can
+grant write access to the metaproj as well.  Users who are granted dev
+rights, but who are B<NOT> in the metaproj's primary groupname will
+have access to the efs CLI, but will B<NOT> have write access to the
+files and directories in the metaproj, due to the lack of support for
+ACLs in NFSv3.
+
+In environments using NFSv4, users who are granted dev rights, but who
+are B<NOT> in the metaproj's primary groupname can still be granted
+write access to the metaproj, since EFS can specify access via an
+NFSv4 ACL.  Note that these ACLs are defined when the releases and
+installed are created, so changes to the dev rights may require
+updating the ACLs on releases.  This is supported via the "efs chown
+release" command.
+
+=item qa
+
+Users with the qa role will be permissioned to run efs CLI commands
+that affect releases in the "qa" stage.  Control is passed from the qa
+team to either the dev or prod teams using the "efs setstage release"
+command.
+
+=item prod
+
+Users with the prod role will be permissioned to run efs CLI commands
+that affect releases in the "prod" and/or "deprecated" stages.  Once a
+release has become prod, it very rarely passes into any other stage
+than "deprecated", to the prod team are usually the ones who will own
+a release through the remainder of it's lifecycle.
+
+=item auto
+
+The "auto" role is very special.  Users with the auto role have access
+to update and modify any "auto releases" used in the metaproj.  The
+auto release concept replaced the legacy EFS 2 "incr" release with an
+automatically versionized release that is automatically deployed to
+the production environment, but in a completely reversible fashion.
+
+Teams that use auto releases will have to decide who has access to
+update and distribute the content of these release, by using the auto
+role.
+
+See the documentation on auto releases for further information, and
+examples, or how to use and manage this very powerful special feature
+of EFS.
+
+=back
+
 =head1 Destroying a metaproj
+
+For completeness, it is possible to destroy a metaproj once it is no
+longer necessary.  However, this can only done once every last project
+in the metaproj has had all of it's releases destroyed and purged, and
+the projects themselves have been destroyed.  Destroying a metaproj
+will remove all of the empty metaproj directories from the fileserver
+infrastructure, and purge the database of all userrights and
+grouprights defined to manage access control to the metaproj, and the
+definition of the metaproj itself.
+
+Note that the efs history database will still have records for the
+metaproj, which would only be an issue if a metaproj is reused at a
+later date.  In the future, we may provide a tool for purging the efs
+history database of all records for an obsolete metaproj, but
+currently the history is immutable.
 
 =cut
