@@ -1,6 +1,12 @@
 
 =head1 Managing EFS Releases and ReleaseAliases
 
+=head2 What is a release?
 
+=head2 What is a releasealias?
+
+=head2 Release Naming Conventions and Use Cases
+
+=head2 ReleaseAlias Naming Conventions and Use Cases
 
 =cut    

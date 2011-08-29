@@ -16,6 +16,11 @@ While you can add platforms at a later date, it is far more effort, so
 if you know you want support for a given platform, try to build
 support for it during the bootstrap process.
 
+In addition, you need to decide if you want to implement the finer
+grained use of platform instances.  By default, EFS no longer requireds
+nor recommends using instances, unless you really anticipate managing
+binary content for instances instead of platforms.  
+
 =head1 Platforms and Instance Concepts
 
 The first thing we have to do is clearly define the EFS specific usage
@@ -31,7 +36,7 @@ set of compatible platform instances.  While it is certainly possible
 (and in some cases, desirable) to compile software optimized for
 specific chipsets, or specific minor releases of operating systems, in
 practice this is rarely required, and in the experience of the EFS
-team, rarely worth the effort for the majoriry of the software managed
+team, rarely worth the effort for the majority of the software managed
 in a large enterprise.
 
 The format of a platform definition is as follows:
@@ -71,14 +76,14 @@ For freebsd: 8.0, 8.1, etc.
 
 =head2 Platform Instances
 
-A platform is always defined with one or more specific instance
+A platform is optionally defined with one or more specific instance
 definitions, which identify the specific machine types with finer
 granularity.  Instance definitions have the same format as platforms,
 but the difference is that the cpu, os, and osrel can be broken down
 and specified with finer granularity.
 
-There are two different ways that platform instances are used, one
-critical to the implemenation of the EFS client, and one optional
+There are two different ways that platform instances can be used, one
+critical to the implementation of the EFS client, and one optional
 usage we expect to be leveraged sparingly.
 
 =head3 Instance Specific NFS Mounts and the "exec" magic
@@ -104,15 +109,15 @@ following pair of directories.
     /efs/dist/foo/bar/1.0/.exec/x86-32.rhel.5
     /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.10
 
-If you have defined the default EFS platforms and instances, then EFS
-will also create a set of symlinks in the .exec directory as follows.
+If you have defined the default EFS platforms, then EFS will also
+create a set of symlinks in the .exec directory as follows.
 
 For each of the backwards compatible platforms:
 
     /efs/dist/foo/bar/1.0/.exec/x86-32.rhel.6 -> x86-32.rhel.5
     /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.11 -> sparc32.sunos.10
 
-For each of the emulating platforms (used when a 64bit platform can
+For each of the emulating platforms (used when a 64 bit platform can
 emulate the instruction set of it's 32 bit version):
 
     /efs/dist/foo/bar/1.0/.exec/x86-64.rhel.5 -> x86-32.rhel.5
@@ -128,8 +133,9 @@ links were chained together, EFS can waste half of that limit easily,
 once your platform and instance namespace has grown over time.
 
 That completes all of the symlinks created from the platform
-namespace.  In addition, EFS will create symlinks for each instance to
-it's underlying platform.  This will include all of the following:
+namespace.  In addition, if you have chosen to define them, EFS will
+create symlinks for each instance to it's underlying platform.  This
+will include all of the following:
 
     /efs/dist/foo/bar/1.0/.exec/amd32.rhel.5 -> x86-32.rhel.5
     /efs/dist/foo/bar/1.0/.exec/amd64.rhel.5 -> x86-32.rhel.5
@@ -165,23 +171,33 @@ The first one is visible to ALL clients, regardless of platform:
     /efs/dist/foo/bar/1.0/exec -> /.efs/dist/foo/bar/1.0/exec
 
 The second one varies, because while all clients share the same NFS
-mount for /efs/dist, the /.efs/dist mount is instance specific.  For
-example, the mounts typically look something like:
+mount for /efs/dist, the /.efs/dist mount either instance or platform
+specific.  For example, if you only define platforms in your domain,
+the mounts typically look something like:
+
+    servername.example.com:/vol/efs_dist/efs_qtree/x86-64.rhel.5/dist
+                         2101870592 523342464 1578528128  25% /.efs/dist
+    servername.example.com:/vol/efs_dist/efs_qtree/dist
+                         2101870592 523342464 1578528128  25% /efs/dist
+
+If you are using instances in your domain, then the client will
+mount the instance specific paths:
 
     servername.example.com:/vol/efs_dist/efs_qtree/amd64.rhel.5/dist
                          2101870592 523342464 1578528128  25% /.efs/dist
     servername.example.com:/vol/efs_dist/efs_qtree/dist
                          2101870592 523342464 1578528128  25% /efs/dist
 
-Note that /.efs/dist is a mount point for a instance specific
-subdirectory of the /efs/dist volume.  On this particular client, that
-second symlink is:
+Note that /.efs/dist is a mount point for a platform or instance
+specific subdirectory of the /efs/dist volume.  On this particular
+client, that second symlink is either of:
 
+    /.efs/dist/foo/bar/1.0/exec -> /efs/dist/foo/bar/1.0/.exec/x86-64.rhel.5
     /.efs/dist/foo/bar/1.0/exec -> /efs/dist/foo/bar/1.0/.exec/amd64.rhel.5
 
-Since /.efs/dist is instance specific, this second symlink is always
-instance specific, and this indirection accomplishes for NFS (v3 and
-v4) what the AFS client does as follows:
+Since /.efs/dist is platform or instance specific, this second symlink
+is always platform or instance specific, and this indirection
+accomplishes for NFS (v3 and v4) what the AFS client does as follows:
 
     /efs/dist/foo/bar/1.0/exec -> .exec/@sys
 
@@ -290,21 +306,26 @@ existing legacy EFS 2 environments to the new EFS 3 namespace.
 
 NOTE: All changes to the platform namespace should be made while EFS
 is in maintenance mode.  It is important that noone attempt to create
-and install or dist a release while the namespace is in flux.
+an install or dist a release while the namespace is in flux.
 
 =head2 Defining the Initial Platform Namespace
 
 When a new EFS domain is bootstrapped, the standard default set of EFS
-platforms and instances for the supported UNIX-like platforms are all
-defined for you.  This default list will be extended as the EFS
-community grows, and the product is ported to more platforms.
-Defining the initial platform and instance namespace can be done by
-altering these configuration files in the source tree:
+platforms for the supported UNIX-like platforms are all defined for
+you.  The instances are B<NOT> defined by default.  This default list
+will be extended as the EFS community grows, and the product is ported
+to more platforms.  Defining the initial platform and instance
+namespace can be done by altering these configuration files in the
+source tree:
 
     .../source/sql/platform.conf
     .../source/sql/platformalias.conf
     .../source/sql/instance.conf
     .../source/sql/instancealias.conf
+
+If you wish to use the default instance names, then you will need to
+uncomment the appropriate sections of the instance.conf and
+instancealias.conf files.
 
 Anyone wishing to extend this namespace to an new, as yet unsupported
 platform is most strongly encouraged to work closely with the EFS
@@ -325,9 +346,11 @@ This process is best explained with a concrete example.  The initial
 EFS releases includes definitions for three basic platform
 hierarchies:
 
-    Linux on Intel
+    Linux (several distros) on Intel
     Solaris on Sparc
     Solaris on Intel
+    FreeBSD on Intel
+    AIX on PowerPC
 
 Solaris on Intel was a very straight forward set of platforms and
 instances to define, simply because the building blocks (the cpu, os
@@ -351,9 +374,12 @@ oldest supported release form each vendor.
 
 For RHEL, the oldest release defined in EFS 3 is RHEL 5.  For Solaris,
 the oldest release defined is Solaris 10.  For Ubuntu, the oldest
-release is the most recent 
+release is 9.10.
 
-However, it is worth pointing out than in the legacy EFS 2 environment, 
+However, it is worth pointing out that in the legacy EFS 2
+environment, support extends back to RHEL 4, and Solaris 8.  If
+necessary, the older definitions can be used, and the older platforms
+supported.
 
 =head2 Extending An Existing Platform Hierarchy, going forwards
 
@@ -386,6 +412,10 @@ defined, and that the platform and instance namespaces look like:
     amd64.rhel.5      x86-64.rhel.5    NULL       amd32.rhel.5
     ia32.rhel.5       x86-32.rhel.5    NULL       NULL
     ia64.rhel.5       x86-64.rhel.5    NULL       ia32.rhel.5
+
+We will also assume that you are using instances in your domain.  If
+you aren't, then you can simply omit the instance definitions, and
+this procedure is somewhat simpler.
 
 The first step in any platform namespace operation is to but EFS into
 maintenance mode:
