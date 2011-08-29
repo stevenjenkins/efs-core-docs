@@ -227,7 +227,11 @@ CPAN modules without EFS.
 Once the build is finished package it up:
 
     cd /
-    tar zcf /var/tmp/usr-efs-YYYY-MM-DD.tgz usr/efs-YYYY-MM-DD
+    tar zcf /var/tmp/usr-efs-YYYY-MM-DD.tgz \
+        usr/efs-YYYY-MM-DD/bin usr/efs-YYYY-MM-DD/lib usr/efs-YYYY-MM-DD/man
+
+NOTE: Listing all three subdirs will skip the src subdir, which is
+huge, and not required for reuse of the binary contents (of course).
 
 For a platform of x86-64.rhel.5, this tarball would then be uploaded to:
 
@@ -245,4 +249,41 @@ downloaded, change the appropriate symlinks.
 
 =head2 Updating the minicpan tarball
 
-=cut    
+In order to recreate the minicpan tarball, which is effectively a
+point in time snapshot of the subset of CPAN used to build and test
+the EFS software, repeat the procedure for creating a new usr-efs
+tarball with the following command line:
+
+    ./util/efs_bootstrap_install --perl=source --skip=efs --nominicpan
+
+This will cause cpanp to download the specific CPAN modules needed
+from cpan.org directly.  Once the build is finished, then be sure to
+install the resulting /usr/efs onto both test.efs efsservers, and
+verify that the test suite runs to completion without errors.  This is
+critical.  In the past, we have seen lots of instability caused by
+subtle issues with the interaction of the various modules we depend
+on, some of which are extremely complex frameworks.
+
+Once this is done, then the minicpan directory can be created by
+copying the data from the cpanplus installation into /home/minicpan.
+This is done by running:
+
+    cpanplus2minicpan.pl
+
+This script is part of the efs-utils git repository.  This will
+convert /usr/efs/src/.cpanplus contents into a minicpan repository
+in /home/minicpan/YYYY-MM-DD.  See the script for options.
+
+Then simply tar up the YYYY-MM-DD directory into a tarball:
+
+    cd /home/minicpan
+    tar zcf YYYY-MM-DD.tgz YYYY-MM-DD
+
+This can then be uploaded to:
+
+    ftp-osl.osuosl.org:~/data/packages/minicpan
+
+And the devel.tgz and/or stable.tgz symlinks in that directory
+updated, if appropriate.
+
+=cut
