@@ -179,7 +179,7 @@ See the EFS client documentation for more information.
 =head2 NFS Servers
 
 Each EFS cell requires a single NFS server dedicated for that cell.
-The NFS server can be used to server non-EFS data, on volumes other
+The NFS server can be used to serve non-EFS data, on volumes other
 than those required by EFS, but each NFS server must be defined for
 one, and only one EFS cell.  You will need one at least one NFS server
 for each distinct EFS cell you want to deploy.
@@ -223,7 +223,7 @@ For example, a typical installation will actually be one "read-write"
 NAS filer, which hosts the writable volumes.  This is the NAS filer
 defined in the EFS database for the cell.  That data center will also
 have several additional NAS filers, each of which also server the
-/efs/dist volume, but on thee filers, that volume is defined as a
+/efs/dist volume, but on these filers, that volume is defined as a
 FlexCache for the original, read-write volume for /efs/dist.
 
 When EFS updates the read-write volume, on just the one NAS filer, the

@@ -17,9 +17,9 @@ if you know you want support for a given platform, try to build
 support for it during the bootstrap process.
 
 In addition, you need to decide if you want to implement the finer
-grained use of platform instances.  By default, EFS no longer requireds
+grained use of platform instances.  By default, EFS no longer requires
 nor recommends using instances, unless you really anticipate managing
-binary content for instances instead of platforms.  
+binary content for instances instead of platforms.
 
 =head1 Platforms and Instance Concepts
 
@@ -52,6 +52,8 @@ values:
     x86-64      64 bit x86-compatible chips
     sparc32     32 bit Sparc chips
     sparc64     64 bit Sparc chips
+    powerpc32   32 bit PowerPC chips
+    powerpc64   64 bit PowerPC chips
 
 =head3 Operating System Definitions
 
@@ -60,6 +62,7 @@ values:
     ubuntu      Ubuntu Linux
     debian      Debian Linux
     freebsd     FreeBSD
+    aix         IBM's AIX
 
 =head3 Operating System Releases
 
@@ -103,11 +106,11 @@ works through the indirection of two symlinks.  For starters, all of
 the platform specific content for a given release is visible to
 clients of all platforms, if they want to access it by name.  For
 example, suppose we build foo/bar/1.0 for both x86-32.rhel.5 and
-sparc32.sunos.10.  The directory tree in /efs/dist will have the
+sparc32.sunos.5.10.  The directory tree in /efs/dist will have the
 following pair of directories.
 
     /efs/dist/foo/bar/1.0/.exec/x86-32.rhel.5
-    /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.5.10
 
 If you have defined the default EFS platforms, then EFS will also
 create a set of symlinks in the .exec directory as follows.
@@ -115,15 +118,15 @@ create a set of symlinks in the .exec directory as follows.
 For each of the backwards compatible platforms:
 
     /efs/dist/foo/bar/1.0/.exec/x86-32.rhel.6 -> x86-32.rhel.5
-    /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sparc32.sunos.5.11 -> sparc32.sunos.5.10
 
 For each of the emulating platforms (used when a 64 bit platform can
 emulate the instruction set of it's 32 bit version):
 
     /efs/dist/foo/bar/1.0/.exec/x86-64.rhel.5 -> x86-32.rhel.5
     /efs/dist/foo/bar/1.0/.exec/x86-64.rhel.6 -> x86-32.rhel.5
-    /efs/dist/foo/bar/1.0/.exec/sparc64.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sparc64.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sparc64.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sparc64.sunos.5.11 -> sparc32.sunos.5.10
 
 Note that EFS removes all unnecessary intermediate symlinks, and every
 symlink will usually point directly to a real directory.  Since most
@@ -145,22 +148,22 @@ will include all of the following:
     /efs/dist/foo/bar/1.0/.exec/ia64.rhel.5 -> x86-32.rhel.5
     /efs/dist/foo/bar/1.0/.exec/ia32.rhel.6 -> x86-32.rhel.5
     /efs/dist/foo/bar/1.0/.exec/ia64.rhel.6 -> x86-32.rhel.5
-    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.10 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.11 -> sparc32.sunos.10
-    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.11 -> sparc32.sunos.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u32.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4u64.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.5.10 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v32.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.5.11 -> sparc32.sunos.5.10
+    /efs/dist/foo/bar/1.0/.exec/sun4v64.sunos.5.11 -> sparc32.sunos.5.10
 
 This is great, if you are accessing this software using a platform or
 instance specific path.  However, there is a platform independent way
@@ -171,9 +174,9 @@ The first one is visible to ALL clients, regardless of platform:
     /efs/dist/foo/bar/1.0/exec -> /.efs/dist/foo/bar/1.0/exec
 
 The second one varies, because while all clients share the same NFS
-mount for /efs/dist, the /.efs/dist mount either instance or platform
-specific.  For example, if you only define platforms in your domain,
-the mounts typically look something like:
+mount for /efs/dist, the /.efs/dist mount is either instance or
+platform specific.  For example, if you only define platforms in your
+domain, the mounts typically look something like:
 
     servername.example.com:/vol/efs_dist/efs_qtree/x86-64.rhel.5/dist
                          2101870592 523342464 1578528128  25% /.efs/dist
@@ -327,7 +330,7 @@ If you wish to use the default instance names, then you will need to
 uncomment the appropriate sections of the instance.conf and
 instancealias.conf files.
 
-Anyone wishing to extend this namespace to an new, as yet unsupported
+Anyone wishing to extend this namespace to a new, as yet unsupported
 platform is most strongly encouraged to work closely with the EFS
 development team, so ensure that the new namespace entries are
 accepted as standards.  If a new set of names are chosen poorly, and
@@ -386,7 +389,7 @@ supported.
 This is probably the most common operation that will be performed on
 the platform namespace.  In the default EFS 3 platform namespace, we
 have defined values for the next major OS for each of the major
-operating systems.  For example, RHEL 6 doens't exist yet, but we know
+operating systems.  For example, RHEL 6 doesn't exist yet, but we know
 that it will, so it makes sense for our namespace to be built with
 existing symlinks for the new OS, so that it can be introduced with
 minimal pain.
@@ -464,7 +467,7 @@ time to complete.
 
 It's that simple, from the operators perspective, but that masks an
 incredibly complex process on the backend.  See the documentation for
-'efs execlinks any' for how this operations can be controlled.  The
+'efs execlinks any' for how this operation can be controlled.  The
 paranoid administrators can run this command cell by cell, region by
 region, celltype by celltype.  The bold and brave can trust the EFS
 test suite, and run this command once, and let it fly.  YMMV, as
@@ -504,19 +507,19 @@ platform.  Let's use a real example here.  Suppose you decided to
 start your Solaris on Sparc infrastructure with Solaris 11, and you
 want to forget about Solaris 10.  The Solaris 11 platforms would be:
 
-    Platform         Backwards  Emulates
-    ========         =========  ========
-    x86-32.sunos.11  NULL       NULL
-    x86-64.sunos.11  NULL       x86-32.sunos.11
+    Platform           Backwards  Emulates
+    ========           =========  ========
+    x86-32.sunos.5.11  NULL       NULL
+    x86-64.sunos.5.11  NULL       x86-32.sunos.5.11
 
 The instances would be:
 
-    PlatformInstance  Platform         Backwards  Emulates
-    ================  ========         =========  ========
-    amd32.sunos.11    x86-32.sunos.11  NULL       NULL
-    amd64.sunos.11    x86-64.sunos.11  NULL       amd32.sunos.11
-    ia32.sunos.11     x86-32.sunos.11  NULL       NULL
-    ia64.sunos.11     x86-64.sunos.11  NULL       ia32.sunos.11
+    PlatformInstance    Platform           Backwards  Emulates
+    ================    ========           =========  ========
+    amd32.sunos.5.11    x86-32.sunos.5.11  NULL       NULL
+    amd64.sunos.5.11    x86-64.sunos.5.11  NULL       amd32.sunos.5.11
+    ia32.sunos.5.11     x86-32.sunos.5.11  NULL       NULL
+    ia64.sunos.5.11     x86-64.sunos.5.11  NULL       ia32.sunos.5.11
 
 Adding the Solaris 10 names is done as follows.  Remember, for ALL
 changes to the platform namespace, EFS should be in maintenance mode,
@@ -527,48 +530,48 @@ namespace is in flux.
 
 First, define the new root platforms and instances:
 
-    efs define platform x86-32.sunos.10
-    efs define platform x86-64.sunos.10 --emulates x86-32.sunos.10
+    efs define platform x86-32.sunos.5.10
+    efs define platform x86-64.sunos.5.10 --emulates x86-32.sunos.5.10
 
-    efs define platforminstance amd32.sunos.10 x86-32.sunos.10
-    efs define platforminstance amd64.sunos.10 x86-64.sunos.10 \
-        --emulates amd32.sunos.10
-    efs define platforminstance ia32.sunos.10 x86-32.sunos.10
-    efs define platforminstance ia64.sunos.10 x86-64.sunos.10 \
-        --emulates ia32.sunos.10
+    efs define platforminstance amd32.sunos.5.10 x86-32.sunos.5.10
+    efs define platforminstance amd64.sunos.5.10 x86-64.sunos.5.10 \
+        --emulates amd32.sunos.5.10
+    efs define platforminstance ia32.sunos.5.10 x86-32.sunos.5.10
+    efs define platforminstance ia64.sunos.5.10 x86-64.sunos.5.10 \
+        --emulates ia32.sunos.5.10
 
 Next, redefine the Solaris 11 names to refer to the new Solaris 10
 names.
 
-    efs define platform x86-32.sunos.11 x86-32.sunos.10
-    efs define platform x86-64.sunos.11 x86-64.sunos.10 x86-32.sunos.11
+    efs define platform x86-32.sunos.5.11 x86-32.sunos.5.10
+    efs define platform x86-64.sunos.5.11 x86-64.sunos.5.10 x86-32.sunos.5.11
 
-    efs define platforminstance amd32.sunos.11 x86-32.sunos.11 amd32.sunos.10
-    efs define platforminstance amd64.sunos.11 x86-64.sunos.11 \
-        amd64.sunos.10 amd32.sunos.11
-    efs define platforminstance ia32.sunos.11 x86-32.sunos.11 ia32.sunos.10
-    efs define platforminstance ia64.sunos.11 x86-64.sunos.11 \
-        ia64.sunos.10 ia32.sunos.11
+    efs define platforminstance amd32.sunos.5.11 x86-32.sunos.5.11 amd32.sunos.5.10
+    efs define platforminstance amd64.sunos.5.11 x86-64.sunos.5.11 \
+        amd64.sunos.5.10 amd32.sunos.5.11
+    efs define platforminstance ia32.sunos.5.11 x86-32.sunos.5.11 ia32.sunos.5.10
+    efs define platforminstance ia64.sunos.5.11 x86-64.sunos.5.11 \
+        ia64.sunos.5.10 ia32.sunos.5.11
 
 The new platform and instance definitions now look like this:
 
-    Platform         Backwards        Emulates
-    ========         =========        ========
-    x86-32.sunos.10  NULL             NULL
-    x86-32.sunos.11  x86-32.sunos.10  NULL
-    x86-64.sunos.10  NULL             x86-32.sunos.10
-    x86-64.sunos.11  x86-64.sunos.10  x86-32.sunos.11
+    Platform           Backwards          Emulates
+    ========           =========          ========
+    x86-32.sunos.5.10  NULL               NULL
+    x86-32.sunos.5.11  x86-32.sunos.5.10  NULL
+    x86-64.sunos.5.10  NULL               x86-32.sunos.5.10
+    x86-64.sunos.5.11  x86-64.sunos.5.10  x86-32.sunos.5.11
 
-    PlatformInstance  Platform         Backwards       Emulates
-    ================  ========         =========       ========
-    amd32.sunos.10    x86-32.sunos.10  NULL            NULL
-    amd32.sunos.11    x86-32.sunos.11  amd32.sunos.10  NULL
-    amd64.sunos.10    x86-64.sunos.10  NULL            amd32.sunos.10
-    amd64.sunos.11    x86-64.sunos.11  amd64.sunos.10  amd32.sunos.11
-    ia32.sunos.10     x86-32.sunos.10  NULL            NULL
-    ia32.sunos.11     x86-32.sunos.11  ia32.sunos.10   NULL
-    ia64.sunos.10     x86-64.sunos.10  NULL            ia32.sunos.10
-    ia64.sunos.11     x86-64.sunos.11  ia64.sunos.10   ia32.sunos.11
+    PlatformInstance    Platform           Backwards         Emulates
+    ================    ========           =========         ========
+    amd32.sunos.5.10    x86-32.sunos.5.10  NULL              NULL
+    amd32.sunos.5.11    x86-32.sunos.5.11  amd32.sunos.5.10  NULL
+    amd64.sunos.5.10    x86-64.sunos.5.10  NULL              amd32.sunos.5.10
+    amd64.sunos.5.11    x86-64.sunos.5.11  amd64.sunos.5.10  amd32.sunos.5.11
+    ia32.sunos.5.10     x86-32.sunos.5.10  NULL              NULL
+    ia32.sunos.5.11     x86-32.sunos.5.11  ia32.sunos.5.10   NULL
+    ia64.sunos.5.10     x86-64.sunos.5.10  NULL              ia32.sunos.5.10
+    ia64.sunos.5.11     x86-64.sunos.5.11  ia64.sunos.5.10   ia32.sunos.5.11
 
 Finally, once the new definitions are complete, take EFS out of
 maintenance mode:
@@ -606,9 +609,7 @@ We will explain this process using the real world example this
 functionality was designed for.  The EFS 2 definitions for 32 bit
 Solaris on Sparc were created using "sparc" to identify the chipset.
 In EFS 3, we decided to make everything symmetric, and include both 32
-and 64 in B<all> of the chipset names.  In addition, we decided to
-drop "5." from the osrel tokens, and just use the Solaris release
-number (10, 11, etc).
+and 64 in B<all> of the chipset names.
 
 In order to upgrade the EFS 2 environment to the EFS 3 namespace
 standards, we will have to rename the platforms and instances as
@@ -634,42 +635,42 @@ The old 32 bit Solaris on Sparc platforms and instances are defined as:
 
 Next, we rename the platforms and the instances:
 
-    efs rename platform sparc.sunos.5.10 sparc32.sunos.10
-    efs rename platform sparc.sunos.5.11 sparc32.sunos.11
+    efs rename platform sparc.sunos.5.10 sparc32.sunos.5.10
+    efs rename platform sparc.sunos.5.11 sparc32.sunos.5.11
 
-    efs rename platforminstance sun4u.sunos.5.10 sun4u32.sunos.10
-    efs rename platforminstance sun4u.sunos.5.11 sun4u32.sunos.11
-    efs rename platforminstance sun4v.sunos.5.10 sun4v32.sunos.10
-    efs rename platforminstance sun4v.sunos.5.11 sun4v32.sunos.11
+    efs rename platforminstance sun4u.sunos.5.10 sun4u32.sunos.5.10
+    efs rename platforminstance sun4u.sunos.5.11 sun4u32.sunos.5.11
+    efs rename platforminstance sun4v.sunos.5.10 sun4v32.sunos.5.10
+    efs rename platforminstance sun4v.sunos.5.11 sun4v32.sunos.5.11
 
 The platform and instance namespace now looks like:
 
-    Platform           Backwards          Emulates
-    ========           =========          ========
-    sparc32.sunos.10   NULL               NULL
-    sparc32.sunos.11   sparc32.sunos.10   NULL
+    Platform             Backwards            Emulates
+    ========             =========            ========
+    sparc32.sunos.5.10   NULL                 NULL
+    sparc32.sunos.5.11   sparc32.sunos.5.10   NULL
 
-    PlatformInstance    Platform           Backwards         Emulates
-    ================    ========           =========         ========
-    sun4u32.sunos.10    sparc32.sunos.10   NULL              NULL
-    sun4u32.sunos.11    sparc32.sunos.11   sun4u32.sunos.10  NULL
-    sun4v32.sunos.10    sparc32.sunos.10   NULL              NULL
-    sun4v32.sunos.11    sparc32.sunos.11   sun4v32.sunos.11  NULL
+    PlatformInstance      Platform             Backwards           Emulates
+    ================      ========             =========           ========
+    sun4u32.sunos.5.10    sparc32.sunos.5.10   NULL                NULL
+    sun4u32.sunos.5.11    sparc32.sunos.5.11   sun4u32.sunos.5.10  NULL
+    sun4v32.sunos.5.10    sparc32.sunos.5.10   NULL                NULL
+    sun4v32.sunos.5.11    sparc32.sunos.5.11   sun4v32.sunos.5.11  NULL
 
 In addition, the following platform and instance B<aliases> are
 created for the old names.
 
     Alias              Platform
     =====              ========
-    sparc.sunos.5.10   sparc32.sunos.10
-    sparc.sunos.5.11   sparc32.sunos.11
+    sparc.sunos.5.10   sparc32.sunos.5.10
+    sparc.sunos.5.11   sparc32.sunos.5.11
     
     Alias              PlatformInstance
     ================   ================
-    sun4u.sunos.5.10   sun4u32.sunos.10
-    sun4u.sunos.5.11   sun4u32.sunos.11
-    sun4v.sunos.5.10   sun4v32.sunos.10
-    sun4v.sunos.5.11   sun4v32.sunos.11
+    sun4u.sunos.5.10   sun4u32.sunos.5.10
+    sun4u.sunos.5.11   sun4u32.sunos.5.11
+    sun4v.sunos.5.10   sun4v32.sunos.5.10
+    sun4v.sunos.5.11   sun4v32.sunos.5.11
 
 Once the new definitions are all in place, the existing .exec
 directories need to be updated, so that all existing installs using
@@ -697,7 +698,7 @@ often than not the case), since there is no way to centrally audit
 which clients are using each name.   
 
 What this accomplishes is preventing anyone from using the old names
-for new instals in new releases, going forward.  You may very well
+for new installs in new releases, going forward.  You may very well
 find that you stuck with the old names, defined as aliases, for
 eternity.
 

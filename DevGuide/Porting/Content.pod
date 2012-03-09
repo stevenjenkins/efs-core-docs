@@ -82,6 +82,15 @@ particular, the following modules may be problematic:
 This must be done on both the 64 and 32 bit clients for the new
 platform.  This will also install efs-core as well.
 
+NOTE: You should be sure to use the minicpan installation if you want
+to ensure that the results of building this use the same versions of
+all the CPAN modules.  CPAN is a moving target, and it changes every
+day.  We highly recommend working with the minicpan snapshot,
+otherwise you will be using the leading edge of CPAN, which may not
+have been fully tested by the EFS team.  We strive to keep our
+minicpan uptodate, and it should be no more than a few weeks or months
+behind.  See the DevGuide/Setup document for details.
+
 =head2 Installing efs-deploy 
 
 Once you have installed perl, the CPAN dependencies, and efs-core,

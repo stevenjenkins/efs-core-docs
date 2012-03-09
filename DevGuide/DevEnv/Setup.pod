@@ -58,6 +58,11 @@ test machine pairs can be any supported EFS client operating .
 However, the code to setup the core services has only been tested on
 CentOS 5.4 and 5.5.
 
+If you copy an ssh public key to /var/tmp/test.efs.pub, then
+efs_virtual_machine will install it into the authorized_keys file for
+all of the system and development accounts, making it trivial to
+access your VMs remotely.
+
 Copy the efs_virtual_machine script to the server, and run it as
 follows:
 
@@ -118,6 +123,11 @@ each domain.
 The core server for boot.efs is very similar to the core server for
 test.efs, but they are required to be separate machines.  The same
 requirement for CentOS 5.4 or 5.5 holds for boot.efs as well.
+
+If you copy an ssh public key to /var/tmp/boot.efs.pub, then
+efs_virtual_machine will install it into the authorized_keys file for
+all of the system and development accounts, making it trivial to
+access your VMs remotely.
 
 Copy efs_virtual_machine to the new VM and run:
 

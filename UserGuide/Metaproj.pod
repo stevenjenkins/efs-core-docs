@@ -78,13 +78,13 @@ client machine.  However, there are several use cases where EFS can be
 used for making some operating system packages available in EFS.
 
 The most significant use case is when we provide packages from RHEL
-which have been from the source rpm.  The specific example is gcc and
-binutils.  We provide the release of gcc from gnu.org in the gnu/gcc
-project, but RedHat has been patching gcc and providing releases with
-important bug fixes which are often not found in the gnu.org releases
-right away.  Therefore, we provide EFS-integrated builds of the RHEL
-gcc packages in the rhel/gcc project, independent of the release found
-in gnu/gcc.
+which have been compiled from the source rpm.  The specific example is
+gcc and binutils.  We provide the release of gcc from gnu.org in the
+gnu/gcc project, but RedHat has been patching gcc and providing
+releases with important bug fixes which are often not found in the
+gnu.org releases right away.  Therefore, we provide EFS-integrated
+builds of the RHEL gcc packages in the rhel/gcc project, independent
+of the release found in gnu/gcc.
 
 There are several "standard" metaprojs used by the EFS team for
 deploying vendor operating system content, either products compiled
@@ -97,9 +97,9 @@ been integrated with wrapper scripts (and other slight of hand).
    Ubuntu Linux			ubuntu
    Debian Linux			debian
    FreeBSD			freebsd
-   Sun Solaris			solaris
+   Sun Solaris			sunos
 
-Presumably, we the need arises, we will also create metaprojs with
+Presumably, when the need arises, we will also create metaprojs with
 names like: aix, hpux, etc.  based entirely on the real world need to
 deploy things from these vendors in EFS.
 
@@ -188,7 +188,7 @@ then delegated to those admin users.
 Once this information has been collected and validated, then efsops
 can create the actual metaproj, and define the admin users, and then
 get on with other work.  From this point forward, efsops normally does
-not need to be involved in the normal user of the metaproj for
+not need to be involved in the normal use of the metaproj for
 development and deployment.
 
 The metaproj is created by running:

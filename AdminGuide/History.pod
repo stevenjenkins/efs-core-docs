@@ -34,7 +34,7 @@ available to the subset of hosts and users who need access to it.  If
 the software needs to be ubiquitous, the problem is even harder.  If
 you have an existing version of the software being used in a mission
 critical context in production, then the added challenge of performing
-transparent upgrades, no to mention rollbacks, adds yet another
+transparent upgrades, not to mention rollbacks, adds yet another
 dimension of complexity.
 
 There are many different kinds of software to be managed in any large
@@ -119,7 +119,7 @@ risk associated with any change.
 In any large environment, you typically need more than one fileserver
 to support a large number of clients, and now you have the challenge
 of keeping them in sync.  Simple mechanisms, such as using rsync for a
-large, unified directory structure, scales very poorly once the size
+large, unified directory structure, scale very poorly once the size
 of the repository and the number of copies grows.
 
 Finally, most implementations of /usr/local offer little to no
@@ -174,7 +174,7 @@ system.
 
 =item Development vs. Production
 
-Most sites manage development and production environment with varying
+Most sites manage development and production environments with varying
 degrees of segregation and independence.  However, everyone needs a
 means of promoting something from development to production.  Ensuring
 that software doesn't change when it crosses the dev/prod boundary is
@@ -375,8 +375,8 @@ Platform specific files were managed in:
 
     /depot/foo/bar/1.0/arch
 
-All of these directories were amd automount points, and with share
-being an uninteresting link, and arch a link to a platform specific
+All of these directories were amd automount points, with share being
+an uninteresting link, and arch a link to a platform specific
 subdirectory, using the "arch" amd selector.
 
 This infrastructure worked fairly well, but it only addressed a few of
@@ -476,9 +476,11 @@ This namespace allowed user's to share the same home directory
 globally, and this implementation heavily leveraged the generally
 excellent WAN performance of the AFS client side cache.
 
-EFS may very well include support for user home directories in a
-similar namespace in a future release, but support for the free form
-group structure isn't in the plans at all.
+While EFS also has a similar /efs/home namespace, because EFS is
+currently implemented using NFS as the backend filesystem, use of
+/efs/home in a truly global environment will alost certainly not scale
+terribly well.  This is the least interesting part of the namespace,
+since it has nothing to do with software deployment.
 
 =item /ms/dev/$metaproj/$project/$release
 
@@ -527,7 +529,7 @@ of the AFS client: the @sys expansion.  When a given client evaluates
 the exec symlink, the "@sys" value is replaced with a string which
 represents the platform of the client.  On a Linux/Intel machine, the
 @sys value might be "x86-64.linux.2.6", but on a Solaris/Sparc machine
-is might be "sparc64.sunos.10".
+it might be "sparc64.sunos.10".
 
 Reimplementing this mechanism in EFS, for NFS clients, where no such
 mechanism exists, was a significant challenge.
@@ -541,14 +543,14 @@ functionality of AFS/VMS, and wanted a similar system.  Thus, EFS was
 born....
 
 EFS has gone through a lot of changes, and used various layers of
-infrastructure through out it's four year life at ML.  Initially, the
-global readwrite /efs/dev namespace was implemented using Acopia
-Networks' Adaptive Resource Switches, but these were eventually
-abandoned, and a much simpler (and far less expensive) automounter
-solution implemented.  In defense of Acopia, EFS was not using the
-primary features of these devices, and over time, they proved to be
-suboptimal for what we were doing, which simply wasn't what the
-devices were designed for.
+infrastructure through out it's life at ML.  Initially, the global
+readwrite /efs/dev namespace was implemented using Acopia Networks'
+Adaptive Resource Switches, but these were eventually abandoned, and a
+much simpler (and far less expensive) automounter solution
+implemented.  In defense of Acopia, EFS was not using the primary
+features of these devices, and over time, they proved to be suboptimal
+for what we were doing, which simply wasn't what the devices were
+designed for.
 
 From day one, however, the focus was on keeping things generic, with
 the hope that the code could one day be made more generically useful.
@@ -677,7 +679,7 @@ which leads us to believe that there is a latent demand for the
 product.
 
 EFS allows system administrators to radically change the way they
-manage clients platforms (dataless clients are far easier when you
+manage client platforms (dataless clients are far easier when you
 don't need the software locally), as well as software distribution and
 deployment.
 
