@@ -4,11 +4,11 @@
 =head2 Building the test.efs Virtual Machines
 
 In order to run the real EFS test suite (the code under test/, not the
-placeholder under t/), requires setting up at least two machines.  The
-test suite simulates a real EFS domain with two dev cells and a single
-prod cell.  These machines have to be set up with a number of
-requirements, and getting an arbitrary pair of machines configured by
-hand is very tedious.
+placeholder under t/), requires setting up at least two machines,
+preferably three.  The test suite simulates a real EFS domain with two
+dev cells and a single prod cell.  These machines have to be set up
+with a number of requirements, and getting an arbitrary pair of
+machines configured by hand is very tedious.
 
 The EFS team uses VM infrastructure to setup and run the test suite,
 all of which is automated using the efs_virtual_machine script in the
@@ -191,6 +191,46 @@ this purpose by efs_virtual_machine, and that the efs-core source tree
 you are testing is in
 /home/efstest/dev/efs/core/branches/cool-new-feature.
 
+=head3 Bootstrap /usr/efs
+
+This only needs to be done once per test.efs setup, unless you are
+testing a new perl version, or a new set of CPAN dependencies (or
+adding them, perhaps).  The freshly configured efst01/efst02 machines
+need the perl and CPAN dependencies installed into /usr/efs before you
+can run the test suite.
+
+On the efst01 machine, run the following as efstest:
+
+    cd /home/efstest/dev/efs/core/branches/cool-new-feature/source
+    sudo ./util/efs_bootstrap_install
+
+This will download the latest pre-compiled tarball of /usr/efs for the
+current platform.  If it is not available, then you will need to build
+it from source.  To do this, first create the target directory:
+
+    sudo mkdir /usr/efs-YYYY-MM-DD
+    sudo rm /usr/efs
+    sudo ln -s efs-YYYY-MM-DD /usr/efs
+
+If it's not obvious, expand YYYY-MM-DD to the current year/month/day.
+That B<was> obvious, right?   Then, build /usr/efs as follows:
+
+    sudo ./util/efs_bootstrap_install --perl=source --nominicpan
+
+This will build using the latest patched release of perl available
+from openefs.org (we patch it for sitecustomize.pl error checking, for
+example), and use cpanp to install all of the dependencies in the
+efs-core Makefile.PL.  Note that building the pre-compiled
+downloadable tarball is a bit more involved (see below).
+
+The --nominicpan option will force the use of http://www.cpan.org for
+all CPAN dependencies, which means you'll get the latest and greatest.
+It also means you may very well get different results from day to day.
+
+If you install a minicpan into /home/minicpan/latest, then you can
+build from a controlled snapshot, by simply omitting the --nominicpan
+option.
+
 =head3 As efstest on fooefst01
 
 The default bash configuration for efstest should prepend /usr/efs/bin
@@ -213,12 +253,11 @@ This will run the entire test suite, from start to finish.
 =head2 Compiling and Updating the usr-efs tarballs
 
 This is how to create the usr-efs-YYYY-MM-DD tarballs that are used by
-efs_bootstrap_install to setup /usr/efs.  Note that we're only
-creating these for the 64 bit platforms, since you only need to use
-this on one machine to get things bootstrapped.  The
-efs-core-bootstrap tarballs, however, are needed on each and every
-platform that will eventually be supported, so we build those for both
-32 and 64 bit OSes.
+efs_bootstrap_install to setup /usr/efs.  This requires a copy of the
+efs-core and efs-deploy git repos, since we build the union of the
+CPAN dependencies for both repos into this directory tree.  This
+tarball is used for bootstrapping both the test.efs and boot.efs
+domains, and in the latter, we need the efs-deploy dependencies.
 
 First create the empty target directory:
 
@@ -233,6 +272,18 @@ efs_bootstrap_install as root, as follows:
 It is important that you NOT install EFS into this directory
 structure.  The whole point is to build perl and all the pre-requisite
 CPAN modules without EFS.
+
+Next, install the CPAN dependencies for efs-deploy.  This is done
+using the same efs_bootstrap_install command, but run from the root of
+the efs-deploy source tree.
+
+    cd /home/efstest/dev/efs/deploy/....
+    /path/to/efs-core/util/efs_bootstrap_install --perl=source --skip=perl,efs
+
+This syntax is admitedly confusing, and will get addressed as the
+tools evolve.  Skipping "perl" simply means don't try to rebuild the
+core perl release, just the CPAN dependencies.  Skipping "efs", means
+don't install the code in the pwd.
 
 Once the build is finished package it up:
 
