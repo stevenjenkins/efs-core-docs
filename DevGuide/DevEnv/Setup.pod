@@ -205,8 +205,14 @@ On the efst01 machine, run the following as efstest:
     sudo ./util/efs_bootstrap_install
 
 This will download the latest pre-compiled tarball of /usr/efs for the
-current platform.  If it is not available, then you will need to build
-it from source.  To do this, first create the target directory:
+current platform.  Next, rsync this directory over to the efst02
+machine.  In this example, my efst02 hostname is rpefst02:
+
+    rsync -avz /usr/efs/ rpefst02:/usr/efs
+
+If the pre-compiled tarball is not available (for example, when
+porting EFS to a new platform), then you will need to build it from
+source.  To do this, first create the target directory:
 
     sudo mkdir /usr/efs-YYYY-MM-DD
     sudo rm /usr/efs
@@ -248,7 +254,10 @@ to add it:
     cd /home/efstest/dev/efs/core/branches/cool-new-feature/source
     prove -v -r test
 
-This will run the entire test suite, from start to finish.
+This will run the entire test suite, from start to finish.  Note that
+you can run the test suite via sudo, but you may not be able to
+interrupt it when run this way.  We recommend running it in an
+interactive shell as root.
 
 =head2 Compiling and Updating the usr-efs tarballs
 
