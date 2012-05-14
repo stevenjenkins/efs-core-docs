@@ -106,7 +106,7 @@ will be prohibitive.  This is a classic "your mileage may vary"
 scenario, as it depends entirely on how well engineered your WAN is.
 Note that it should be perfectly reasonable for developers in a remote
 location to access and work on a remote project by working on machines
-that are "local" to the project, rather than by access the projects
+that are "local" to the project, rather than by accessing the projects
 via the filesystem over the WAN.
 
 If the cell name for the project is not specified, then EFS will

@@ -46,7 +46,7 @@ managing a collection of independent AFS cells, and via VMS, made them
 appear to the end-users as an integrated environment.  The biggest
 challenge was on the security side, and since we were building our
 own Kerberos infrastructure, we were able to address these issues, but
-did so in proprietary ways.  For example, we creating our own tools
+did so in proprietary ways.  For example, we created our own tools
 for authentication that transparently converted the user's Kerberos
 credentials from the single, global realm we used, into AFS tokens for
 B<all> of the cells in the environment, simultaneously.  That only

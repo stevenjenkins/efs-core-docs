@@ -98,9 +98,10 @@ been integrated with wrapper scripts (and other slight of hand).
    Debian Linux			debian
    FreeBSD			freebsd
    Sun Solaris			sunos
+   IBM AIX                      aix
 
 Presumably, when the need arises, we will also create metaprojs with
-names like: aix, hpux, etc.  based entirely on the real world need to
+names like: hpux, suse, etc. based entirely on the real world need to
 deploy things from these vendors in EFS.
 
 =head3 Vendor Products
@@ -252,7 +253,7 @@ command.
 Users with the prod role will be permissioned to run efs CLI commands
 that affect releases in the "prod" and/or "deprecated" stages.  Once a
 release has become prod, it very rarely passes into any other stage
-than "deprecated", to the prod team are usually the ones who will own
+than "deprecated", so the prod team are usually the ones who will own
 a release through the remainder of it's lifecycle.
 
 =item auto
@@ -268,7 +269,7 @@ update and distribute the content of these release, by using the auto
 role.
 
 See the documentation on auto releases for further information, and
-examples, or how to use and manage this very powerful special feature
+examples, or how to use and manage this very powerful advanced feature
 of EFS.
 
 =back

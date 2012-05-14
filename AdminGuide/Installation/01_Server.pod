@@ -241,8 +241,8 @@ database, with the correct version of the EFS schema.
 
 =head2 Database Requirements
 
-We require either a MySQL database, with three database logins for the
-EFS application.
+We require a MySQL database, with three database logins for the EFS
+application.
 
 =head3 MySQL Requirements
 
@@ -368,7 +368,7 @@ server.
 =head1 Building and installing the efsclient and efsserver packages
 
 If you reboot the efsserver at this point, it should be obvious that
-the client NFS mounts will not be created, not will efsd startup.  In
+the client NFS mounts will not be created, nor will efsd startup.  In
 order to have these services survive a reboot, you need to install the
 efsclient and efsserver packages.  In order to do that, you'll need to
 build them.

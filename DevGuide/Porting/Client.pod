@@ -32,7 +32,7 @@ This is the first script that must be ported to the new platform.
 This is a /usr/bin/perl script, and it needs to be modified with an
 extreme minimalist approach, to avoid introducing dependencies on any
 unnecessary modules, or on recent perl core features (sorry, you may
-not use 5.10 tweaks until the last /usr/bin/perl based on 5.8 drops
+not use 5.10 features until the last /usr/bin/perl based on 5.8 drops
 out of support).
 
 =head2 efs_configure_autofs, efs_configure_amd

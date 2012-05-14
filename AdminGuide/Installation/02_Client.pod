@@ -26,7 +26,7 @@ content for /efs, and they will in general NOT be used as EFS servers.
 Having said that, it is prefectly reasonable to use the initial EFS
 server to satisfy the requirement for one of the platforms, but once
 the EFS domain goes "live", the EFS server should be used exclusively
-for efsd.  In fact, since` the only machine on which you have a
+for efsd.  In fact, since the only machine on which you have a
 working EFS installation at the of the server bootstrap process is the
 initial EFS server, you have to use it to complete the client
 bootstrap process.
