@@ -64,4 +64,14 @@ Once this script completes, you will have releases of:
 that can be run from /efs/dist, with almost no dependencies on locally
 installed operating system software.
 
+Note that you may need to create some releasealiases manually.  For
+example, rhel/gcc/rhel41 contains rhel/binutuils/rhel41 as a dependency,
+so you will need to manually run
+
+	efs download rhel binutuils 2.17.50.0.6
+	efs create releasealias rhel binutils 2.17.50.0.6 rhel41
+	efs dist releasealias rhel binutuils rhel41
+
+in order to install that dependency.
+
 =cut
